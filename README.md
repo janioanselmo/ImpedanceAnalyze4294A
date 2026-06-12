@@ -65,6 +65,12 @@ Esse driver permite que o sistema operacional detecte e exponha instrumentos GPI
 
 O `pyvisa-sim` serve apenas para testes sem instrumento real. Nesse modo simulado, você não precisa de NI-VISA ou Keysight IO Libraries, mas também não haverá comunicação com o 4294A físico.
 
+Recomendação prática:
+
+- Se estiver usando uma interface/adaptador Keysight/Agilent, instale a versão mais recente do **Keysight IO Libraries Suite** compatível com seu Windows.
+- Se estiver usando uma interface/adaptador National Instruments, instale a versão mais recente do **NI-VISA** compatível com seu Windows.
+- Evite instalar dois backends VISA ao mesmo tempo sem necessidade. Quando isso for inevitável, confirme no utilitário do fabricante qual backend está ativo para GPIB/USB/LAN.
+
 ### Instalação
 
 Em ambientes Python 3:
@@ -195,6 +201,12 @@ The 4294A drivers must also be installed and correctly recognized by the operati
 That driver lets the operating system detect and expose GPIB, USB, or LAN instruments to the application. It cannot be installed through `requirements.txt` because it is not a regular Python package; it must be installed with the vendor installer.
 
 `pyvisa-sim` is only for tests without real hardware. In that simulated mode, you do not need NI-VISA or Keysight IO Libraries, but there is also no communication with the physical 4294A.
+
+Practical recommendation:
+
+- If you are using a Keysight/Agilent interface or adapter, install the latest **Keysight IO Libraries Suite** version compatible with your Windows version.
+- If you are using a National Instruments interface or adapter, install the latest **NI-VISA** version compatible with your Windows version.
+- Avoid installing two VISA backends at the same time unless needed. If that is unavoidable, confirm in the vendor utility which backend is active for GPIB/USB/LAN.
 
 ### Installation
 
