@@ -107,6 +107,17 @@ No Linux/macOS:
 
 Para testar sem instrumento físico, habilite o modo de simulação na interface quando o ambiente `pyvisa-sim` estiver configurado.
 
+### Auditoria rápida
+
+Depois de alterações no código, rode:
+
+```bash
+python -m py_compile script.py interface.py scripts/smoke_test.py
+python scripts/smoke_test.py
+```
+
+O smoke test abre a interface em modo offscreen, verifica espaçamentos básicos, aciona `File > Import Data`, importa `sample1.txt`, valida `pyvisa-sim` e executa uma aquisição simulada com instrumento falso.
+
 ### Uso Básico
 
 1. Abra a aplicação com `python script.py`.
@@ -243,6 +254,17 @@ On Linux/macOS:
 ```
 
 To test without physical hardware, enable the simulation mode in the interface when `pyvisa-sim` is configured.
+
+### Quick Audit
+
+After code changes, run:
+
+```bash
+python -m py_compile script.py interface.py scripts/smoke_test.py
+python scripts/smoke_test.py
+```
+
+The smoke test opens the interface in offscreen mode, checks basic spacing, triggers `File > Import Data`, imports `sample1.txt`, validates `pyvisa-sim`, and runs a simulated acquisition with a fake instrument.
 
 ### Basic Use
 

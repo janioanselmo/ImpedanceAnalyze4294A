@@ -2,6 +2,8 @@
 import os
 import sys
 import tempfile
+import traceback
+import warnings
 
 from numpy import random
 
@@ -69,6 +71,16 @@ def wait_for_operation_complete(resource):
         resource.timeout = old_timeout
 
 
+def clear_figure(figure):
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            'ignore',
+            message='Attempt to set non-positive xlim on a log-scaled axis will be ignored.',
+            category=UserWarning,
+        )
+        figure.clear()
+
+
 class StartQT4(QtGui.QMainWindow):
     def __init__(self, parent=None):
         super(StartQT4, self).__init__(parent)
@@ -81,7 +93,6 @@ class StartQT4(QtGui.QMainWindow):
         self.fig = plt.figure()
         self.canvas = FigureCanvas(self.fig)
         self.toolbar = NavigationToolbar(self.canvas, self)
-        #QtCore.QObject.connect(self.ui.btn_runpoint, QtCore.SIGNAL('clicked()'), self.dynamic_analysis)
         self.ui.btn_detectar.clicked.connect(self.instrument_detection)
         self.ui.btn_conectar.clicked.connect(self.instrument_connection)
         self.ui.btn_opencal.clicked.connect(self.open_calibration)
@@ -225,9 +236,34 @@ class StartQT4(QtGui.QMainWindow):
         else:
             pass
 
-    def importar_dados(self):
-        caminho = QtGui.QFileDialog.getOpenFileNameAndFilter(self, 'Select the file', filter='*.txt')
-        file_path = str(caminho[0])
+    def show_error(self, title, text, detail=None):
+        message = QtGui.QMessageBox(self)
+        message.setIcon(QtGui.QMessageBox.Critical)
+        message.setWindowTitle(title)
+        message.setText(text)
+        if detail:
+            message.setDetailedText(detail)
+        message.addButton('Ok', QtGui.QMessageBox.AcceptRole)
+        message.exec_()
+
+    def importar_dados(self, *args):
+        try:
+            file_path, _ = QtGui.QFileDialog.getOpenFileName(
+                self,
+                'Select the file',
+                '',
+                'Text files (*.txt);;All files (*)',
+            )
+            self.import_data_file(file_path)
+        except Exception:
+            self.show_error(
+                'Import error',
+                'Could not import the selected data file.',
+                traceback.format_exc(),
+            )
+
+    def import_data_file(self, file_path):
+        file_path = str(file_path)
         if not file_path:
             return
 
@@ -292,29 +328,45 @@ class StartQT4(QtGui.QMainWindow):
 
     def instrument_detection(self):
         global rm
-        is_simulation = self.ui.checkbox_pyvisasim.checkState()
-        if is_simulation:
-            rm = visa.ResourceManager('@sim')
-        else:
-            rm = visa.ResourceManager()
-        equipaments = list(rm.list_resources())
-        self.ui.combobox_equipamentos.addItems(equipaments)
+        try:
+            is_simulation = self.ui.checkbox_pyvisasim.checkState()
+            if is_simulation:
+                rm = visa.ResourceManager('@sim')
+            else:
+                rm = visa.ResourceManager()
+            equipaments = list(rm.list_resources())
+            self.ui.combobox_equipamentos.clear()
+            self.ui.combobox_equipamentos.addItems(equipaments)
+        except Exception:
+            self.show_error(
+                'VISA detection error',
+                'Could not detect VISA instruments.',
+                traceback.format_exc(),
+            )
 
     def instrument_connection(self):
         global instrument
         address = self.ui.combobox_equipamentos.currentText()
         try:
             instrument = rm.open_resource(unicode(address))
-        except:
-            message = QtGui.QMessageBox()
-            message.setText('Conection error.')
-            message.setDetailedText('Please, verify that the equipament is turned on and connected to the computer.'
-                                     'Make sure that the conection cable is working and you have installed all the necessary drivers.')
-            message.exec_()
+        except Exception:
+            self.show_error(
+                'Connection error',
+                'Could not connect to the selected instrument.',
+                'Please verify that the equipment is turned on, connected, and that the required VISA driver is installed.\n\n'
+                + traceback.format_exc(),
+            )
             return
-        instrument_name = instrument.query('*IDN?')
-        self.ui.label_inst_name.setText(instrument_name)
-        self.ui.group_calibration.setEnabled(True)
+        try:
+            instrument_name = ask(instrument, '*IDN?')
+            self.ui.label_inst_name.setText(instrument_name)
+            self.ui.group_calibration.setEnabled(True)
+        except Exception:
+            self.show_error(
+                'Instrument query error',
+                'Connected to the resource, but could not read the instrument identification.',
+                traceback.format_exc(),
+            )
 
 
     def open_calibration(self):
@@ -627,14 +679,14 @@ class StartQT4(QtGui.QMainWindow):
         self.plot_data(Freq, 'Frequency (Hz)', Z, 'Impedance (Ohms)', Theta, 'Phase (degrees)', 'log')
 
     def plot_ZrZi(self):
-        self.fig.clear()
+        clear_figure(self.fig)
         self.ax1 = self.fig.add_subplot(111)
         self.ax1.plot(Zr, Zi, 'blue')
         self.ax1.set_title(self.ui.amostra_id.text(), fontsize='12')
         self.ax1.grid(which='both')
         self.ax1.set_xlabel('Real Impedance', fontsize='12')
         self.ax1.set_ylabel('Imaginary Impedance', fontsize='18', color='blue')
-        plt.xlim(min(Zr), max(Zr))
+        self.ax1.set_xlim(min(Zr), max(Zr))
         self.canvas.draw()
 
     def plot_data(self, x, labelx, y1, labely1, y2, labely2, xscale):
@@ -642,7 +694,8 @@ class StartQT4(QtGui.QMainWindow):
 
         :rtype : object
         """
-        self.fig.clear()
+        clear_figure(self.fig)
+        x = np.asarray(x)
         self.ax1 = self.fig.add_subplot(111)
         self.ax1.plot(x, y1, 'blue')
         self.ax1.set_title(self.ui.amostra_id.text(), fontsize='12')
@@ -652,9 +705,11 @@ class StartQT4(QtGui.QMainWindow):
         self.ax1.set_xlabel(labelx, fontsize='12')
         self.ax1.set_ylabel(labely1, fontsize='18', color='blue')
         self.ax2.set_ylabel(labely2, fontsize='18', color='green')
-        plt.xlim(x[0], x[-1])
+        if xscale == 'log' and np.any(x <= 0):
+            xscale = 'linear'
         self.ax1.set_xscale(xscale)
         self.ax2.set_xscale(xscale)
+        self.ax1.set_xlim(x[0], x[-1])
         for i in self.ax1.get_yticklabels():
             i.set_color('blue')
         for i in self.ax2.get_yticklabels():
