@@ -50,6 +50,7 @@ def main():
     assert window.minimumHeight() >= 760
     assert window.ui.tabWidget.tabText(0) == 'Connection'
     assert window.ui.label.text() == 'Connected:'
+    assert window.ui.tableView.height() >= 180
 
     assert_group_gap(window.ui.groupBox, window.ui.groupBox_analise_2)
     assert_group_gap(window.ui.groupBox_analise_2, window.ui.group_calibration)

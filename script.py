@@ -133,9 +133,9 @@ class StartQT4(QtGui.QMainWindow):
         ui.groupBox__amostra.setGeometry(left_x, 10, left_width, 275)
         ui.groupBox_analise.setGeometry(left_x, 300, left_width, 285)
         ui.btn_run.setGeometry(left_x + 10, 600, left_width - 20, 32)
-        ui.layoutWidget.setGeometry(content_x, 10, content_width, 410)
-        ui.layoutWidget1.setGeometry(content_x + 20, 435, content_width - 40, 34)
-        ui.tableView.setGeometry(content_x + 20, 480, content_width - 40, 120)
+        ui.layoutWidget.setGeometry(content_x, 10, content_width, 350)
+        ui.layoutWidget1.setGeometry(content_x + 20, 378, content_width - 40, 34)
+        ui.tableView.setGeometry(content_x + 20, 425, content_width - 40, 190)
 
         # Program tab.
         ui.groupBox__amostra_2.setGeometry(left_x, 10, left_width, 275)
@@ -215,6 +215,12 @@ class StartQT4(QtGui.QMainWindow):
 
         ui.btn_conectar.setMaximumWidth(120)
         ui.commandLinkButton.setMinimumWidth(300)
+        ui.tableView.setAlternatingRowColors(True)
+        ui.tableView.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        ui.tableView.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+        ui.tableView.horizontalHeader().setStretchLastSection(True)
+        ui.tableView.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignCenter)
+        ui.tableView.verticalHeader().setDefaultSectionSize(22)
         ui.tabWidget.setTabText(ui.tabWidget.indexOf(ui.tab), 'Connection')
         ui.tabWidget.setTabText(ui.tabWidget.indexOf(ui.tab_2), 'Analysis')
         ui.tabWidget.setTabText(ui.tabWidget.indexOf(ui.tab_3), 'Program')
@@ -726,8 +732,9 @@ class StartQT4(QtGui.QMainWindow):
         # set row height
         nrows = len(data[0])
         for row in xrange(nrows):
-            self.ui.tableView.setRowHeight(row, 18)
-        for col in [1, 3, 4]:
+            self.ui.tableView.setRowHeight(row, 22)
+        self.ui.tableView.resizeColumnsToContents()
+        for col in [0, 1, 2, 3, 4]:
             self.ui.tableView.resizeColumnToContents(col)
 
 class MyTableModel(QtCore.QAbstractTableModel):
