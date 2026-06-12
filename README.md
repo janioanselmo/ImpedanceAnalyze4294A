@@ -63,7 +63,7 @@ Também é necessário ter os drivers do analisador 4294A instalados e corretame
 
 Esse driver permite que o sistema operacional detecte e exponha instrumentos GPIB, USB ou LAN para a aplicação. Ele não pode ser instalado pelo `requirements.txt`, porque não é um pacote Python comum; deve ser instalado pelo instalador do fabricante.
 
-O `pyvisa-sim` serve apenas para testes sem instrumento real.
+O `pyvisa-sim` serve apenas para testes sem instrumento real. Nesse modo simulado, você não precisa de NI-VISA ou Keysight IO Libraries, mas também não haverá comunicação com o 4294A físico.
 
 ### Instalação
 
@@ -194,7 +194,7 @@ The 4294A drivers must also be installed and correctly recognized by the operati
 
 That driver lets the operating system detect and expose GPIB, USB, or LAN instruments to the application. It cannot be installed through `requirements.txt` because it is not a regular Python package; it must be installed with the vendor installer.
 
-`pyvisa-sim` is only for tests without real hardware.
+`pyvisa-sim` is only for tests without real hardware. In that simulated mode, you do not need NI-VISA or Keysight IO Libraries, but there is also no communication with the physical 4294A.
 
 ### Installation
 

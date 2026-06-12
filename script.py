@@ -114,9 +114,9 @@ class StartQT4(QtGui.QMainWindow):
         content_width = 710
 
         # Connection tab.
-        ui.groupBox.setGeometry(left_x, 10, left_width, 150)
-        ui.groupBox_analise_2.setGeometry(left_x, 175, left_width, 285)
-        ui.group_calibration.setGeometry(left_x, 475, left_width, 80)
+        ui.groupBox.setGeometry(left_x, 10, left_width, 170)
+        ui.groupBox_analise_2.setGeometry(left_x, 195, left_width, 285)
+        ui.group_calibration.setGeometry(left_x, 495, left_width, 80)
 
         # Analysis tab.
         ui.groupBox__amostra.setGeometry(left_x, 10, left_width, 275)
@@ -135,6 +135,7 @@ class StartQT4(QtGui.QMainWindow):
         ui.commandLinkButton.setGeometry(content_x + 410, 540, 280, 50)
 
         text_updates = {
+            ui.label: 'Connected:',
             ui.label_15: 'Start:',
             ui.label_14: 'Stop:',
             ui.label_17: 'Points:',
