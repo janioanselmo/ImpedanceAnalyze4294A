@@ -1,103 +1,221 @@
-# impedspec
-Python Graphic User Interface for impedance spectroscopy analysis
------------------------------------------------------------------------
-|                              ImpedSpec                              |
-|                                                                     |
-|	 A Graphical User Interface for Impedance Spectroscopy using        |
-|                             Keysight 4294A                          |
-|																	                                    |
-|                      (Version 3.1, October 2016)                    |
-|																	                                    |
-|          Copyright (C) 2018 G. L. Rech  and C. A. Perottoni         |
-|                                                                     |
------------------------------------------------------------------------
------------------------------------------------------------------------
+# ImpedanceAnalyze4294A
 
-ImpedSpec is a graphical user interface to control of instrument, 
-acquisition and processing of impedance spectra from dielectric materials 
-and electric circuits.
+Interface gráfica em Python/PyQt4 para aquisição, importação e análise de espectros de impedância com o analisador Keysight/Agilent 4294A.
 
-This program is a free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
-                                                                     
-This library is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-General Public License for more details.
-                                                                     
-You should have received a copy of the GNU General Public License 
-along with this library.  If not, see <http://www.gnu.org/licenses/>.
+---
 
-Publications reporting results obtained using ImpedSpec should make
-appropriate citation to the software and papers that describe it.
+## 🇧🇷 PT-BR
 
+### Visão Geral
 
------------------------------------------------------------------------
-								ImpedSpec
------------------------------------------------------------------------
+O **ImpedanceAnalyze4294A** é uma interface desktop baseada no projeto ImpedSpec para controle do analisador de impedância Keysight/Agilent 4294A, aquisição de espectros e visualização de propriedades elétricas de materiais dielétricos e circuitos.
 
-In this directory you will find the following files: 
+A aplicação permite detectar/conectar o instrumento via VISA, executar calibração aberta/curta, configurar varreduras de frequência, coletar impedância/fase e calcular grandezas derivadas como resistência, capacitância, permissividade real e permissividade imaginária.
 
-script.py ---> The main python script. To run the software, you should run
-				       run this file using: python script.py
+### Funcionalidades
 
-interdace-ui.py ---> This is the user interface python file. This file is 
-					     automatically generated from the .ui file using pyuic4.
+- Interface gráfica em PyQt4.
+- Detecção de instrumentos via VISA/PyVISA.
+- Suporte a simulação por `pyvisa-sim`.
+- Conexão com analisador Keysight/Agilent 4294A.
+- Calibração **open** e **short** antes da aquisição.
+- Configuração de frequência inicial/final, número de pontos, tensão, banda e média.
+- Varredura linear ou logarítmica.
+- Aquisição de impedância (`Z`) e fase (`Theta`).
+- Cálculo de `Zr`, `Zi`, `R`, `C`, `epsilon'` e `epsilon''`.
+- Importação de arquivos `.txt` gerados pelo próprio software.
+- Visualização de gráficos: permissividade, `R/C`, `Z/Theta` e plano `Zr/Zi`.
+- Exportação dos dados medidos em arquivo texto.
 
-InterfaceImpedSpec.ui ---> Qt file containing the user interface as developed
-						   using QtDesigner. 
+### Estrutura
 
-sample*.txt    ---> Example files from analysis performed using ImpedSpec. This
-					     files can be visualized in the software Through File>Import Data.
+| Arquivo | Descrição |
+|---|---|
+| `script.py` | Script principal da aplicação e rotinas de aquisição/análise |
+| `interface.py` | Interface Python gerada a partir do arquivo `.ui` pelo `pyuic4` |
+| `InterfaceImpedSpec.ui` | Layout Qt editável no Qt Designer |
+| `sample1.txt` | Arquivo de exemplo para importação |
+| `sample2.txt` | Arquivo de exemplo para importação |
+| `sample3.txt` | Arquivo de exemplo para importação |
+| `LICENSE` | Licença GPL-3.0 |
 
-LICENSE         ---> Copy of the GNU General Public License, Version 3
+### Dependências
 
------------------------------------------------------------------------
-                            DEPENDENCIES
------------------------------------------------------------------------
-Notice that you should have the drivers of the equipment correctly installed
-on your machine for the software to recognize it. Check the equipment support
-page at Keysight website for the latest driver available.
+Este projeto é legado e depende de bibliotecas do ecossistema Python 2/PyQt4:
 
-Some python packages are needed (in addition to Numpy and matplotlib). You 
-can get them by running
+```text
+numpy
+matplotlib
+astropy
+docutils
+pyvisa
+pyvisa-sim
+PyQt4
+```
 
-	pip install astropy docutils pyvisa pyvisa-sim
+Também é necessário ter os drivers do analisador 4294A instalados e corretamente reconhecidos pelo sistema operacional.
 
-You should have Qt installed in your machine. Also, PyQt is needed.
-You can install it through
+### Instalação
 
-	sudo dnf install pyqt4-devel
-	
-If you are having any trouble related to the matplotlib backend, 
-try to run
+Em ambientes compatíveis com PyQt4:
 
-	sudo dnf install python-matplotlib-qt
-	
-	
------------------------------------------------------------------------
-						RUNNING THE SOFTWARE
------------------------------------------------------------------------
-Once the dependencies are satisfied, the GUI can be excecuted using the command
-prompt in the program folder :
+```bash
+pip install astropy docutils pyvisa pyvisa-sim
+```
 
-	python script.py
+No Fedora, o ambiente original indicava:
 
+```bash
+sudo dnf install pyqt4-devel
+sudo dnf install python-matplotlib-qt
+```
 
------------------------------------------------------------------------
-						MODIFYING THE SOFTWARE
-----------------------------------------------------------------------
-If you wish to modify the software, you can do it by modyfing the script.py file
-and by modifying the user interface. The GUI file (InterfaceImpedSpec.ui) can be
-eddited using QtDesigner. In fedora you can get it by running
+Em sistemas atuais, PyQt4 pode não estar disponível nos repositórios padrão. Nesse caso, use um ambiente legado compatível ou avalie portar a interface para PyQt5/PySide antes de executar em produção.
 
-	sudo dnf install qt-devel qt-creator
-	
-After any modification in the GUI, you should create a new python interface file.
-You can do it with pyuic4 (included with pyqt)
+### Execução
 
-	pyuic4 InterfaceImpedSpec.ui -o interface_ui.py
-	
-	
+```bash
+python script.py
+```
+
+Para testar sem instrumento físico, habilite o modo de simulação na interface quando o ambiente `pyvisa-sim` estiver configurado.
+
+### Uso Básico
+
+1. Abra a aplicação com `python script.py`.
+2. Detecte os instrumentos VISA disponíveis.
+3. Selecione e conecte o analisador 4294A.
+4. Execute a calibração **open** e **short** ou pule a calibração quando apropriado para teste.
+5. Configure a amostra, faixa de frequência, número de pontos e parâmetros de aquisição.
+6. Execute a análise.
+7. Visualize os gráficos e salve os dados medidos.
+
+### Formato dos Dados
+
+Os arquivos exportados/importados armazenam colunas numéricas de frequência, impedância, fase e grandezas derivadas. Os arquivos `sample*.txt` podem ser usados para validar a importação e os gráficos sem conexão com o equipamento.
+
+### Observações Técnicas
+
+- O código usa `matplotlib` com backend `Qt4Agg`.
+- O arquivo `interface.py` é gerado automaticamente; alterações visuais devem ser feitas em `InterfaceImpedSpec.ui` e regeneradas com `pyuic4`.
+- O comando de regeneração é:
+
+```bash
+pyuic4 InterfaceImpedSpec.ui -o interface.py
+```
+
+- Publicações que usem resultados obtidos com este software devem citar o software e os trabalhos associados ao ImpedSpec.
+- Revise a compatibilidade de drivers VISA antes de conectar o equipamento em um novo computador.
+
+### Licença
+
+Distribuído sob **GNU General Public License v3.0 ou posterior**. Veja [`LICENSE`](./LICENSE).
+
+---
+
+## 🇺🇸 English
+
+### Overview
+
+**ImpedanceAnalyze4294A** is a desktop GUI based on the ImpedSpec project for controlling the Keysight/Agilent 4294A impedance analyzer, acquiring impedance spectra, and visualizing electrical properties of dielectric materials and circuits.
+
+The application can detect/connect the instrument through VISA, run open/short calibration, configure frequency sweeps, acquire impedance/phase data, and compute derived quantities such as resistance, capacitance, real permittivity and imaginary permittivity.
+
+### Features
+
+- PyQt4 graphical interface.
+- Instrument detection through VISA/PyVISA.
+- `pyvisa-sim` support.
+- Connection to the Keysight/Agilent 4294A impedance analyzer.
+- **Open** and **short** calibration before acquisition.
+- Start/stop frequency, point count, voltage, bandwidth and averaging configuration.
+- Linear or logarithmic sweep.
+- Impedance (`Z`) and phase (`Theta`) acquisition.
+- Calculation of `Zr`, `Zi`, `R`, `C`, `epsilon'` and `epsilon''`.
+- Import of `.txt` files generated by the software.
+- Plot views for permittivity, `R/C`, `Z/Theta` and the `Zr/Zi` plane.
+- Export of measured data to text files.
+
+### Structure
+
+| File | Description |
+|---|---|
+| `script.py` | Main application script and acquisition/analysis routines |
+| `interface.py` | Python UI generated from the `.ui` file with `pyuic4` |
+| `InterfaceImpedSpec.ui` | Qt layout editable in Qt Designer |
+| `sample1.txt` | Sample file for import |
+| `sample2.txt` | Sample file for import |
+| `sample3.txt` | Sample file for import |
+| `LICENSE` | GPL-3.0 license |
+
+### Dependencies
+
+This is a legacy project and depends on the Python 2/PyQt4 ecosystem:
+
+```text
+numpy
+matplotlib
+astropy
+docutils
+pyvisa
+pyvisa-sim
+PyQt4
+```
+
+The 4294A drivers must also be installed and correctly recognized by the operating system.
+
+### Installation
+
+In PyQt4-compatible environments:
+
+```bash
+pip install astropy docutils pyvisa pyvisa-sim
+```
+
+On Fedora, the original environment used:
+
+```bash
+sudo dnf install pyqt4-devel
+sudo dnf install python-matplotlib-qt
+```
+
+On current systems, PyQt4 may not be available from default repositories. Use a compatible legacy environment or consider porting the UI to PyQt5/PySide before production use.
+
+### Running
+
+```bash
+python script.py
+```
+
+To test without physical hardware, enable the simulation mode in the interface when `pyvisa-sim` is configured.
+
+### Basic Use
+
+1. Start the application with `python script.py`.
+2. Detect available VISA instruments.
+3. Select and connect the 4294A analyzer.
+4. Run **open** and **short** calibration, or skip calibration when appropriate for testing.
+5. Configure sample data, frequency range, point count and acquisition parameters.
+6. Run the analysis.
+7. Inspect plots and save measured data.
+
+### Data Format
+
+Exported/imported files store numeric columns for frequency, impedance, phase and derived quantities. The `sample*.txt` files can be used to validate import and plotting without connecting the instrument.
+
+### Technical Notes
+
+- The code uses `matplotlib` with the `Qt4Agg` backend.
+- `interface.py` is generated automatically; visual changes should be made in `InterfaceImpedSpec.ui` and regenerated with `pyuic4`.
+- Regeneration command:
+
+```bash
+pyuic4 InterfaceImpedSpec.ui -o interface.py
+```
+
+- Publications using results obtained with this software should cite the software and the related ImpedSpec papers.
+- Check VISA driver compatibility before connecting the instrument on a new computer.
+
+### License
+
+Distributed under the **GNU General Public License v3.0 or later**. See [`LICENSE`](./LICENSE).
