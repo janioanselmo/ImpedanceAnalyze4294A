@@ -16,7 +16,8 @@ A aplicação permite detectar/conectar o instrumento via VISA, executar calibra
 
 - Interface gráfica em PyQt5.
 - Ajustes de layout em runtime para evitar rótulos cortados, campos comprimidos e grupos sobrepostos em ambientes PyQt5/Windows.
-- Tabela de resultados com área ampliada, linhas alternadas e colunas ajustadas ao conteúdo.
+- Tabela de resultados com área ampliada, linhas alternadas, cabeçalhos compactos e colunas proporcionais.
+- Gráficos com margens ajustadas para manter rótulos de eixos visíveis.
 - Detecção de instrumentos via VISA/PyVISA.
 - Suporte a simulação por `pyvisa-sim`.
 - Conexão com analisador Keysight/Agilent 4294A.
@@ -165,7 +166,8 @@ The application can detect/connect the instrument through VISA, run open/short c
 
 - PyQt5 graphical interface.
 - Runtime layout adjustments to prevent clipped labels, squeezed fields, and overlapping groups in PyQt5/Windows environments.
-- Results table with expanded viewing area, alternating rows, and content-based column sizing.
+- Results table with expanded viewing area, alternating rows, compact headers, and proportional columns.
+- Plots with adjusted margins to keep axis labels visible.
 - Instrument detection through VISA/PyVISA.
 - `pyvisa-sim` support.
 - Connection to the Keysight/Agilent 4294A impedance analyzer.

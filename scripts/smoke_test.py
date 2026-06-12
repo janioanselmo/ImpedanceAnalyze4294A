@@ -71,6 +71,8 @@ def main():
 
     assert window.ui.amostra_id.text() == 'RC_RC_0'
     assert window.ui.num_pontos.value() == 400
+    assert window.ax1.get_xlabel() == 'Frequency (Hz)'
+    assert window.table_model.headerdata == ['Freq (Hz)', 'Z (Ohms)', 'Phase (deg)', "eps'", "eps''"]
 
     script.instrument = FakeInstrument()
     window.ui.amostra_id.setText('audit_fake')

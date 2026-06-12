@@ -690,9 +690,10 @@ class StartQT4(QtGui.QMainWindow):
         self.ax1.plot(Zr, Zi, 'blue')
         self.ax1.set_title(self.ui.amostra_id.text(), fontsize='12')
         self.ax1.grid(which='both')
-        self.ax1.set_xlabel('Real Impedance', fontsize='12')
-        self.ax1.set_ylabel('Imaginary Impedance', fontsize='18', color='blue')
+        self.ax1.set_xlabel('Real Impedance', fontsize='10')
+        self.ax1.set_ylabel('Imaginary Impedance', fontsize='14', color='blue')
         self.ax1.set_xlim(min(Zr), max(Zr))
+        self.fig.subplots_adjust(left=0.12, right=0.96, bottom=0.18, top=0.90)
         self.canvas.draw()
 
     def plot_data(self, x, labelx, y1, labely1, y2, labely2, xscale):
@@ -708,9 +709,9 @@ class StartQT4(QtGui.QMainWindow):
         self.ax2 = self.ax1.twinx()
         self.ax2.plot(x, y2, 'green')
         self.ax1.grid(which='both')
-        self.ax1.set_xlabel(labelx, fontsize='12')
-        self.ax1.set_ylabel(labely1, fontsize='18', color='blue')
-        self.ax2.set_ylabel(labely2, fontsize='18', color='green')
+        self.ax1.set_xlabel(labelx, fontsize='10', labelpad=8)
+        self.ax1.set_ylabel(labely1, fontsize='14', color='blue')
+        self.ax2.set_ylabel(labely2, fontsize='14', color='green')
         if xscale == 'log' and np.any(x <= 0):
             xscale = 'linear'
         self.ax1.set_xscale(xscale)
@@ -720,22 +721,24 @@ class StartQT4(QtGui.QMainWindow):
             i.set_color('blue')
         for i in self.ax2.get_yticklabels():
             i.set_color('green')
+        self.fig.subplots_adjust(left=0.12, right=0.88, bottom=0.24, top=0.90)
         # plt.savefig('%s.png' %file_name.value, dpi = 300)
         # self.ui.plot_window.
         self.canvas.draw()
 
     def update_table(self, freq, imped, teta, er, ei):
         data = [freq, imped, teta, er, ei]
-        header = ['Frequency (Hz)', 'Impedance (Ohms)', 'Phase (deg)', 'Real Permittivity', 'Imaginary Permittivity']
+        header = ['Freq (Hz)', 'Z (Ohms)', 'Phase (deg)', "eps'", "eps''"]
         self.table_model = MyTableModel(data, header, parent=self)
         self.ui.tableView.setModel(self.table_model)
         # set row height
         nrows = len(data[0])
         for row in xrange(nrows):
             self.ui.tableView.setRowHeight(row, 22)
-        self.ui.tableView.resizeColumnsToContents()
-        for col in [0, 1, 2, 3, 4]:
-            self.ui.tableView.resizeColumnToContents(col)
+        available_width = max(620, self.ui.tableView.viewport().width() - 20)
+        column_ratios = [0.20, 0.22, 0.17, 0.20, 0.21]
+        for col, ratio in enumerate(column_ratios):
+            self.ui.tableView.setColumnWidth(col, int(available_width * ratio))
 
 class MyTableModel(QtCore.QAbstractTableModel):
     def __init__(self, datain, headerdata, parent=None, *args):
