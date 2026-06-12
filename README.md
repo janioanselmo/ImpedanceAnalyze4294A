@@ -40,9 +40,9 @@ A aplicação permite detectar/conectar o instrumento via VISA, executar calibra
 | `requirements.txt` | Dependências Python instaláveis por `pip` |
 | `run_windows.bat` | Criação de ambiente virtual, instalação de dependências e execução no Windows |
 | `run_linux_mac.sh` | Criação de ambiente virtual, instalação de dependências e execução no Linux/macOS |
-| `sample1.txt` | Arquivo de exemplo para importação |
-| `sample2.txt` | Arquivo de exemplo para importação |
-| `sample3.txt` | Arquivo de exemplo para importação |
+| `samples/sample1.txt` | Arquivo de exemplo para importação |
+| `samples/sample2.txt` | Arquivo de exemplo para importação |
+| `samples/sample3.txt` | Arquivo de exemplo para importação |
 | `LICENSE` | Licença GPL-3.0 |
 
 ### Dependências
@@ -118,7 +118,7 @@ python -m py_compile script.py interface.py scripts/smoke_test.py
 python scripts/smoke_test.py
 ```
 
-O smoke test abre a interface em modo offscreen, verifica espaçamentos básicos, aciona `File > Import Data`, importa `sample1.txt`, valida `pyvisa-sim` e executa uma aquisição simulada com instrumento falso.
+O smoke test abre a interface em modo offscreen, verifica espaçamentos básicos, aciona `File > Import Data`, importa `samples/sample1.txt`, valida `pyvisa-sim` e executa uma aquisição simulada com instrumento falso.
 
 ### Uso Básico
 
@@ -132,7 +132,7 @@ O smoke test abre a interface em modo offscreen, verifica espaçamentos básicos
 
 ### Formato dos Dados
 
-Os arquivos exportados/importados armazenam colunas numéricas de frequência, impedância, fase e grandezas derivadas. Os arquivos `sample*.txt` podem ser usados para validar a importação e os gráficos sem conexão com o equipamento.
+Os arquivos exportados/importados armazenam colunas numéricas de frequência, impedância, fase e grandezas derivadas. Os arquivos `samples/sample*.txt` podem ser usados para validar a importação e os gráficos sem conexão com o equipamento.
 
 ### Observações Técnicas
 
@@ -190,9 +190,9 @@ The application can detect/connect the instrument through VISA, run open/short c
 | `requirements.txt` | Python dependencies installable with `pip` |
 | `run_windows.bat` | Virtual environment setup, dependency installation and Windows launcher |
 | `run_linux_mac.sh` | Virtual environment setup, dependency installation and Linux/macOS launcher |
-| `sample1.txt` | Sample file for import |
-| `sample2.txt` | Sample file for import |
-| `sample3.txt` | Sample file for import |
+| `samples/sample1.txt` | Sample file for import |
+| `samples/sample2.txt` | Sample file for import |
+| `samples/sample3.txt` | Sample file for import |
 | `LICENSE` | GPL-3.0 license |
 
 ### Dependencies
@@ -268,7 +268,7 @@ python -m py_compile script.py interface.py scripts/smoke_test.py
 python scripts/smoke_test.py
 ```
 
-The smoke test opens the interface in offscreen mode, checks basic spacing, triggers `File > Import Data`, imports `sample1.txt`, validates `pyvisa-sim`, and runs a simulated acquisition with a fake instrument.
+The smoke test opens the interface in offscreen mode, checks basic spacing, triggers `File > Import Data`, imports `samples/sample1.txt`, validates `pyvisa-sim`, and runs a simulated acquisition with a fake instrument.
 
 ### Basic Use
 
@@ -282,7 +282,7 @@ The smoke test opens the interface in offscreen mode, checks basic spacing, trig
 
 ### Data Format
 
-Exported/imported files store numeric columns for frequency, impedance, phase and derived quantities. The `sample*.txt` files can be used to validate import and plotting without connecting the instrument.
+Exported/imported files store numeric columns for frequency, impedance, phase and derived quantities. The `samples/sample*.txt` files can be used to validate import and plotting without connecting the instrument.
 
 ### Technical Notes
 

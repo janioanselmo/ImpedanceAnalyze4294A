@@ -63,7 +63,7 @@ def main():
     assert window.ui.combobox_equipamentos.count() > 0
 
     original_get_open_file_name = script.QtGui.QFileDialog.getOpenFileName
-    script.QtGui.QFileDialog.getOpenFileName = lambda *args, **kwargs: ('sample1.txt', '*.txt')
+    script.QtGui.QFileDialog.getOpenFileName = lambda *args, **kwargs: (os.path.join('samples', 'sample1.txt'), '*.txt')
     try:
         window.ui.actionImportar_Dados.trigger()
     finally:
