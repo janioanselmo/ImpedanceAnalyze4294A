@@ -15,6 +15,7 @@ A aplicação permite detectar/conectar o instrumento via VISA, executar calibra
 ### Funcionalidades
 
 - Interface gráfica em PyQt5.
+- Ajustes de layout em runtime para evitar rótulos cortados e campos comprimidos em ambientes PyQt5/Windows.
 - Detecção de instrumentos via VISA/PyVISA.
 - Suporte a simulação por `pyvisa-sim`.
 - Conexão com analisador Keysight/Agilent 4294A.
@@ -110,6 +111,7 @@ Os arquivos exportados/importados armazenam colunas numéricas de frequência, i
 
 - O código usa `matplotlib` com backend `Qt5Agg`.
 - O arquivo `interface.py` veio de uma geração PyQt4 e contém shims de compatibilidade PyQt5. Alterações visuais devem ser feitas em `InterfaceImpedSpec.ui` e regeneradas/portadas para PyQt5.
+- `script.py` aplica ajustes visuais após `setupUi()` para ampliar a coluna de parâmetros, encurtar rótulos longos e evitar textos comprimidos.
 - O comando de regeneração é:
 
 ```bash
@@ -136,6 +138,7 @@ The application can detect/connect the instrument through VISA, run open/short c
 ### Features
 
 - PyQt5 graphical interface.
+- Runtime layout adjustments to prevent clipped labels and squeezed fields in PyQt5/Windows environments.
 - Instrument detection through VISA/PyVISA.
 - `pyvisa-sim` support.
 - Connection to the Keysight/Agilent 4294A impedance analyzer.
@@ -231,6 +234,7 @@ Exported/imported files store numeric columns for frequency, impedance, phase an
 
 - The code uses `matplotlib` with the `Qt5Agg` backend.
 - `interface.py` came from a PyQt4 generation and includes PyQt5 compatibility shims. Visual changes should be made in `InterfaceImpedSpec.ui` and regenerated/ported to PyQt5.
+- `script.py` applies visual adjustments after `setupUi()` to widen the parameter column, shorten long labels, and avoid compressed text.
 - Regeneration command:
 
 ```bash

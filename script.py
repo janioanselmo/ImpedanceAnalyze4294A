@@ -75,6 +75,7 @@ class StartQT4(QtGui.QMainWindow):
         QtGui.QWidget.__init__(self, parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.apply_layout_fixes()
         self.showMaximized()
         # Conexao de elementos da interface grafica
         self.fig = plt.figure()
@@ -100,6 +101,98 @@ class StartQT4(QtGui.QMainWindow):
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
 
+    def apply_layout_fixes(self):
+        self.setMinimumSize(1180, 680)
+        ui = self.ui
+
+        # The original PyQt4 UI uses fixed geometry. PyQt5/Windows fonts need a
+        # little more horizontal room to avoid clipped labels and squeezed fields.
+        left_width = 380
+        content_x = 400
+        content_width = 740
+
+        for group in [
+            ui.groupBox,
+            ui.group_calibration,
+            ui.groupBox_analise_2,
+            ui.groupBox__amostra,
+            ui.groupBox_analise,
+            ui.groupBox__amostra_2,
+            ui.groupBox_analise_3,
+        ]:
+            group.setGeometry(group.x(), group.y(), left_width, group.height())
+
+        ui.btn_run.setGeometry(20, 510, left_width - 20, 28)
+        ui.layoutWidget.setGeometry(content_x, 1, content_width, 411)
+        ui.layoutWidget1.setGeometry(content_x + 20, 420, content_width - 40, 34)
+        ui.tableView.setGeometry(content_x + 20, 462, content_width - 40, 100)
+        ui.listWidget.setGeometry(content_x, 10, 360, 461)
+        ui.frame.setGeometry(content_x + 380, 10, 380, 459)
+        ui.pushButton.setGeometry(content_x, 480, 170, 31)
+        ui.commandLinkButton.setGeometry(content_x + 430, 472, 300, 48)
+
+        text_updates = {
+            ui.label_15: 'Start:',
+            ui.label_14: 'Stop:',
+            ui.label_17: 'Points:',
+            ui.var_log_2: 'Log',
+            ui.checkbox_ptavg_2: 'Average',
+            ui.label_20: 'Avg.:',
+            ui.label_4: 'Start:',
+            ui.label_5: 'Stop:',
+            ui.label_6: 'Points:',
+            ui.var_log: 'Log',
+            ui.checkbox_ptavg: 'Average',
+            ui.label_10: 'Avg.:',
+            ui.label_2: 'Sample ID',
+            ui.label_11: 'D (mm):',
+            ui.label_12: 't (mm):',
+            ui.btn_plot_permi: 'eps vs f',
+            ui.btn_plot_ZT: 'Z/Theta',
+            ui.btn_plot_RC: 'R/C',
+            ui.label_29: 'Start:',
+            ui.label_28: 'Stop:',
+            ui.label_31: 'Points:',
+            ui.var_log_4: 'Log',
+            ui.checkbox_ptavg_4: 'Average',
+            ui.label_34: 'Avg.:',
+            ui.label_38: 'Sample ID',
+            ui.label_35: 'D (mm):',
+            ui.label_36: 't (mm):',
+            ui.label_43: 'Sample ID',
+            ui.label_46: 'Start:',
+            ui.label_45: 'Stop:',
+            ui.label_48: 'Points:',
+            ui.label_52: 'Average:',
+            ui.label_51: 'Avg.:',
+            ui.label_40: 'D (mm):',
+            ui.label_41: 't (mm):',
+            ui.pushButton: 'Delete',
+            ui.commandLinkButton: 'Start Program',
+        }
+
+        for widget, text in text_updates.items():
+            widget.setText(text)
+
+        for label in [
+            ui.label_4, ui.label_5, ui.label_6, ui.label_8, ui.label_9, ui.label_10,
+            ui.label_15, ui.label_14, ui.label_17, ui.label_19, ui.label_18, ui.label_20,
+            ui.label_29, ui.label_28, ui.label_31, ui.label_33, ui.label_32, ui.label_34,
+        ]:
+            label.setMinimumWidth(95)
+
+        for button in [
+            ui.btn_detectar, ui.btn_conectar, ui.btn_shortcal, ui.btn_opencal,
+            ui.blt_skipcal, ui.btn_plot_permi, ui.btn_plot_ZT, ui.btn_plot_RC,
+            ui.btn_plot_ZrZi, ui.pushButton,
+        ]:
+            button.setMinimumHeight(28)
+
+        ui.btn_conectar.setMaximumWidth(120)
+        ui.commandLinkButton.setMinimumWidth(300)
+        ui.tabWidget.setTabText(ui.tabWidget.indexOf(ui.tab), 'Connection')
+        ui.tabWidget.setTabText(ui.tabWidget.indexOf(ui.tab_2), 'Analysis')
+        ui.tabWidget.setTabText(ui.tabWidget.indexOf(ui.tab_3), 'Program')
 
     # Metodos
     def skip_calibration(self):
