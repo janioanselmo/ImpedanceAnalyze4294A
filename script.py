@@ -102,34 +102,37 @@ class StartQT4(QtGui.QMainWindow):
         layout.addWidget(self.canvas)
 
     def apply_layout_fixes(self):
-        self.setMinimumSize(1180, 680)
+        self.setMinimumSize(1180, 760)
         ui = self.ui
 
         # The original PyQt4 UI uses fixed geometry. PyQt5/Windows fonts need a
-        # little more horizontal room to avoid clipped labels and squeezed fields.
-        left_width = 380
-        content_x = 400
-        content_width = 740
+        # more room to avoid clipped labels, squeezed fields, and overlapping
+        # group boxes.
+        left_x = 10
+        left_width = 410
+        content_x = 440
+        content_width = 710
 
-        for group in [
-            ui.groupBox,
-            ui.group_calibration,
-            ui.groupBox_analise_2,
-            ui.groupBox__amostra,
-            ui.groupBox_analise,
-            ui.groupBox__amostra_2,
-            ui.groupBox_analise_3,
-        ]:
-            group.setGeometry(group.x(), group.y(), left_width, group.height())
+        # Connection tab.
+        ui.groupBox.setGeometry(left_x, 10, left_width, 150)
+        ui.groupBox_analise_2.setGeometry(left_x, 175, left_width, 285)
+        ui.group_calibration.setGeometry(left_x, 475, left_width, 80)
 
-        ui.btn_run.setGeometry(20, 510, left_width - 20, 28)
-        ui.layoutWidget.setGeometry(content_x, 1, content_width, 411)
-        ui.layoutWidget1.setGeometry(content_x + 20, 420, content_width - 40, 34)
-        ui.tableView.setGeometry(content_x + 20, 462, content_width - 40, 100)
-        ui.listWidget.setGeometry(content_x, 10, 360, 461)
-        ui.frame.setGeometry(content_x + 380, 10, 380, 459)
-        ui.pushButton.setGeometry(content_x, 480, 170, 31)
-        ui.commandLinkButton.setGeometry(content_x + 430, 472, 300, 48)
+        # Analysis tab.
+        ui.groupBox__amostra.setGeometry(left_x, 10, left_width, 275)
+        ui.groupBox_analise.setGeometry(left_x, 300, left_width, 285)
+        ui.btn_run.setGeometry(left_x + 10, 600, left_width - 20, 32)
+        ui.layoutWidget.setGeometry(content_x, 10, content_width, 410)
+        ui.layoutWidget1.setGeometry(content_x + 20, 435, content_width - 40, 34)
+        ui.tableView.setGeometry(content_x + 20, 480, content_width - 40, 120)
+
+        # Program tab.
+        ui.groupBox__amostra_2.setGeometry(left_x, 10, left_width, 275)
+        ui.groupBox_analise_3.setGeometry(left_x, 300, left_width, 285)
+        ui.listWidget.setGeometry(content_x, 10, 340, 520)
+        ui.frame.setGeometry(content_x + 360, 10, 350, 520)
+        ui.pushButton.setGeometry(content_x, 545, 170, 32)
+        ui.commandLinkButton.setGeometry(content_x + 410, 540, 280, 50)
 
         text_updates = {
             ui.label_15: 'Start:',
@@ -179,7 +182,17 @@ class StartQT4(QtGui.QMainWindow):
             ui.label_15, ui.label_14, ui.label_17, ui.label_19, ui.label_18, ui.label_20,
             ui.label_29, ui.label_28, ui.label_31, ui.label_33, ui.label_32, ui.label_34,
         ]:
-            label.setMinimumWidth(95)
+            label.setMinimumWidth(80)
+
+        for field in [
+            ui.spin_freq_inicial, ui.spin_freq_final, ui.num_pontos,
+            ui.spinbox_tensao, ui.spinbox_banda, ui.spin_ptavg,
+            ui.spin_freq_inicial_2, ui.spin_freq_final_2, ui.num_pontos_2,
+            ui.spinbox_tensao_2, ui.spinbox_banda_2, ui.spin_ptavg_2,
+            ui.spin_freq_inicial_4, ui.spin_freq_final_4, ui.num_pontos_4,
+            ui.spinbox_tensao_4, ui.spinbox_banda_4, ui.spin_ptavg_4,
+        ]:
+            field.setMinimumWidth(150)
 
         for button in [
             ui.btn_detectar, ui.btn_conectar, ui.btn_shortcal, ui.btn_opencal,
