@@ -1,6 +1,5 @@
 numpy
 matplotlib
-astropy
-docutils
+PyQt5
 pyvisa
 pyvisa-sim

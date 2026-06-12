@@ -1,22 +1,72 @@
 # coding: latin-1
-from astropy.io import ascii
+import os
+import sys
+import tempfile
 
-from docutils.nodes import table
 from numpy import random
+
+os.environ.setdefault(
+    "MPLCONFIGDIR",
+    os.path.join(tempfile.gettempdir(), "ImpedanceAnalyze4294A-matplotlib"),
+)
+
+import numpy as np
 import matplotlib
-matplotlib.use("Qt4Agg")
+matplotlib.use("Qt5Agg")
+try:
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+    from PyQt5 import QtCore, QtGui, QtWidgets
+    QtGui.QMainWindow = QtWidgets.QMainWindow
+    QtGui.QWidget = QtWidgets.QWidget
+    QtGui.QApplication = QtWidgets.QApplication
+    QtGui.QMessageBox = QtWidgets.QMessageBox
+    QtGui.QFileDialog = QtWidgets.QFileDialog
+    QtCore.QVariant = lambda value=None: value
+except ImportError:
+    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+    from PyQt4 import QtCore, QtGui
+import matplotlib.pyplot as plt
+try:
+    import visa
+except ImportError:
+    import pyvisa as visa
+from interface import Ui_MainWindow
 
 __author__ = 'giovanirech'
-import sys
-import numpy as np
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-import visa
-import os
-from PyQt4 import QtCore, QtGui
-from interface import Ui_MainWindow, _fromUtf8
+
+try:
+    unicode
+except NameError:
+    unicode = str
+
+try:
+    xrange
+except NameError:
+    xrange = range
+
+
+def ask(resource, command):
+    if hasattr(resource, 'ask'):
+        return resource.ask(command)
+    return resource.query(command)
+
+
+def ask_for_values(resource, command):
+    if hasattr(resource, 'ask_for_values'):
+        return resource.ask_for_values(command)
+    return resource.query_ascii_values(command)
+
+
+def wait_for_operation_complete(resource):
+    old_timeout = getattr(resource, 'timeout', None)
+    try:
+        resource.timeout = None
+        resource.write('*WAI')
+        ask(resource, '*OPC?')
+    finally:
+        resource.timeout = old_timeout
 
 
 class StartQT4(QtGui.QMainWindow):
@@ -31,19 +81,19 @@ class StartQT4(QtGui.QMainWindow):
         self.canvas = FigureCanvas(self.fig)
         self.toolbar = NavigationToolbar(self.canvas, self)
         #QtCore.QObject.connect(self.ui.btn_runpoint, QtCore.SIGNAL('clicked()'), self.dynamic_analysis)
-        QtCore.QObject.connect(self.ui.btn_detectar, QtCore.SIGNAL('clicked()'), self.instrument_detection)
-        QtCore.QObject.connect(self.ui.btn_conectar, QtCore.SIGNAL('clicked()'), self.instrument_connection)
-        QtCore.QObject.connect(self.ui.btn_opencal, QtCore.SIGNAL('clicked()'), self.open_calibration)
-        QtCore.QObject.connect(self.ui.btn_shortcal, QtCore.SIGNAL('clicked()'), self.short_calibration)
-        QtCore.QObject.connect(self.ui.btn_run, QtCore.SIGNAL('clicked()'), self.run_analysis)
-        QtCore.QObject.connect(self.ui.toolbtn_savepath, QtCore.SIGNAL('clicked()'), self.get_save_path)
-        QtCore.QObject.connect(self.ui.btn_plot, QtCore.SIGNAL('clicked()'), self.plot_test)
-        QtCore.QObject.connect(self.ui.btn_plot_permi, QtCore.SIGNAL('clicked()'), self.plot_erei)
-        QtCore.QObject.connect(self.ui.btn_plot_RC, QtCore.SIGNAL('clicked()'), self.plot_RC)
-        QtCore.QObject.connect(self.ui.btn_plot_ZT, QtCore.SIGNAL('clicked()'), self.plot_ZT)
-        QtCore.QObject.connect(self.ui.btn_plot_ZrZi, QtCore.SIGNAL('clicked()'), self.plot_ZrZi)
-        QtCore.QObject.connect(self.ui.actionImportar_Dados, QtCore.SIGNAL('triggered()'), self.importar_dados)
-        QtCore.QObject.connect(self.ui.blt_skipcal, QtCore.SIGNAL('clicked()'), self.skip_calibration)
+        self.ui.btn_detectar.clicked.connect(self.instrument_detection)
+        self.ui.btn_conectar.clicked.connect(self.instrument_connection)
+        self.ui.btn_opencal.clicked.connect(self.open_calibration)
+        self.ui.btn_shortcal.clicked.connect(self.short_calibration)
+        self.ui.btn_run.clicked.connect(self.run_analysis)
+        self.ui.toolbtn_savepath.clicked.connect(self.get_save_path)
+        self.ui.btn_plot.clicked.connect(self.plot_test)
+        self.ui.btn_plot_permi.clicked.connect(self.plot_erei)
+        self.ui.btn_plot_RC.clicked.connect(self.plot_RC)
+        self.ui.btn_plot_ZT.clicked.connect(self.plot_ZT)
+        self.ui.btn_plot_ZrZi.clicked.connect(self.plot_ZrZi)
+        self.ui.actionImportar_Dados.triggered.connect(self.importar_dados)
+        self.ui.blt_skipcal.clicked.connect(self.skip_calibration)
         self.is_open_calibrated = False
         self.is_short_calibrated = False
         layout = self.ui.verticalLayout
@@ -70,22 +120,31 @@ class StartQT4(QtGui.QMainWindow):
 
     def importar_dados(self):
         caminho = QtGui.QFileDialog.getOpenFileNameAndFilter(self, 'Select the file', filter='*.txt')
-        s = str(caminho[0]).rsplit('/', 1)
-        path = s[0]+'/'
-        data = np.genfromtxt(str(caminho[0]), skip_header=0)[:, :]
+        file_path = str(caminho[0])
+        if not file_path:
+            return
+
+        path = os.path.dirname(file_path)
+        data = np.genfromtxt(file_path, skip_header=0)
+        if data.ndim == 1:
+            data = data.reshape(1, -1)
+
         amostra = 'Identifiction not found'
         diametro = 1
         espessura = 1
-        with open(str(caminho[0])) as arquivo:
+        with open(file_path) as arquivo:
             for line in arquivo:
-                if line.startswith('#D'):
+                normalized_line = line.strip()
+                normalized_key = normalized_line.split()[0] if normalized_line.split() else ''
+                normalized_key_lower = normalized_key.lower()
+                if normalized_key in ('#D(mm)', '#D'):
                     diametro = float(line.rstrip('\n').split()[-1])
-                if line.startswith('#d'):
+                if normalized_key in ('#d(mm)', '#d'):
                     espessura = float(line.rstrip('\n').split()[-1])
-                if line.startswith('#sample'):
-                    amostra = ' '.join(line.rstrip('\n').split()[1:-1])
-                if line.startswith('#sweep'):
-                    if line.rstrip('\n').split()[-1].lower == 'lin':
+                if normalized_key_lower == '#sample':
+                    amostra = ' '.join(line.rstrip('\n').split()[1:])
+                if normalized_key_lower == '#sweep':
+                    if line.rstrip('\n').split()[-1].lower() == 'lin':
                         self.ui.var_lin.setChecked(True)
                     else:
                         self.ui.var_log.setChecked(True)
@@ -167,9 +226,7 @@ class StartQT4(QtGui.QMainWindow):
             instrument.write('*SRE 4')
             instrument.write('*CLS')
             instrument.write('COMA')
-            del instrument.timeout
-            instrument.write('*WAI')
-            instrument.ask('*OPC?')
+            wait_for_operation_complete(instrument)
             complete = QtGui.QMessageBox()
             complete.setText('OPEN compensation complete.')
             complete.setIcon(QtGui.QMessageBox.Information)
@@ -199,9 +256,7 @@ class StartQT4(QtGui.QMainWindow):
             instrument.write('*SRE 4')
             instrument.write('*CLS')
             instrument.write('COMB')
-            del instrument.timeout
-            instrument.write('*WAI')
-            instrument.ask('*OPC?')
+            wait_for_operation_complete(instrument)
             complete = QtGui.QMessageBox()
             complete.setText('SHORT compensation complete.')
             complete.setIcon(QtGui.QMessageBox.Information)
@@ -255,6 +310,7 @@ class StartQT4(QtGui.QMainWindow):
             errorbox.setText('Instrument no recognized or not connected.')
             errorbox.addButton('Ok', QtGui.QMessageBox.AcceptRole)
             errorbox.exec_()
+            return
         if not(self.no_blank_fields()):
             return
         if self.ui.var_lin.isChecked():
@@ -285,9 +341,7 @@ class StartQT4(QtGui.QMainWindow):
         instrument.write('ESNB 1')
         instrument.write('*SRE 4')
         instrument.write('*CLS')
-        del instrument.timeout
-        instrument.write('*WAI')
-        instrument.ask('*OPC?')
+        wait_for_operation_complete(instrument)
         instrument.write('TRAC A')
         instrument.write('AUTO')
         instrument.write('TRAC B')
@@ -295,17 +349,20 @@ class StartQT4(QtGui.QMainWindow):
         global Zr, Zi, R, C, er, ei, d, D, Theta, Freq, Z
         instrument.write('FORM5')
         instrument.write('TRAC A')
-        nop = instrument.ask('POIN?')
-        Z_data = instrument.ask_for_values('OUTPDTRC?')
-        Z = range(int(nop))
+        nop = ask(instrument, 'POIN?')
+        Z_data = ask_for_values(instrument, 'OUTPDTRC?')
+        Z = [0] * int(nop)
         for x in range(0, int(nop)):
             Z[x] = Z_data[2*x]
         instrument.write('TRAC B')
-        Theta_data = instrument.ask_for_values('OUTPDTRC?')
-        Theta = range(int(nop))
+        Theta_data = ask_for_values(instrument, 'OUTPDTRC?')
+        Theta = [0] * int(nop)
         for x in range(0, int(nop)):
             Theta[x] = Theta_data[2*x]
-        Freq = instrument.ask_for_values('OUTPSWPRM?')
+        Freq = ask_for_values(instrument, 'OUTPSWPRM?')
+        Z = np.asarray(Z)
+        Theta = np.asarray(Theta)
+        Freq = np.asarray(Freq)
         #stats = instrument.ask_for_values('MEASTAT?')
         e0 = 8.85418782e-12
         d = espessura*10**(-3)
@@ -325,7 +382,7 @@ class StartQT4(QtGui.QMainWindow):
         path = str(self.ui.LineEdit_SavePath.text())
         filename = str(id_amostra)
         M = np.c_[np.asarray(Freq), np.asarray(Z), np.asarray(Theta), er, ei]
-        np.savetxt('%s\%s.txt' % (path, filename), M, fmt='%1.4e',
+        np.savetxt(os.path.join(path, '%s.txt' % filename), M, fmt='%1.4e',
                    delimiter='\t',
                    header='#Freq(Hz)\t Z(ohms)\t Phase(degrees) \t er_Re \t er_Im',
                    comments='#Sample %s\n#d(mm)  %s\n#D(mm) %s \n#Sweep  %s \n#Voltage  %s'
@@ -349,6 +406,7 @@ class StartQT4(QtGui.QMainWindow):
             errorbox.setText('Instrument not connected or not recognized.')
             errorbox.addButton('Ok', QtGui.QMessageBox.AcceptRole)
             errorbox.exec_()
+            return
         if not(self.no_blank_fields()):
             return
         if self.ui.var_lin.isChecked():
@@ -379,9 +437,7 @@ class StartQT4(QtGui.QMainWindow):
         instrument.write('ESNB 1')
         instrument.write('*SRE 4')
         instrument.write('*CLS')
-        del instrument.timeout
-        instrument.write('*WAI')
-        instrument.ask('*OPC?')
+        wait_for_operation_complete(instrument)
         instrument.write('TRAC A')
         instrument.write('AUTO')
         instrument.write('TRAC B')
@@ -389,17 +445,20 @@ class StartQT4(QtGui.QMainWindow):
         global Zr, Zi, R, C, er, ei, d, D, Theta, Freq, Z
         instrument.write('FORM5')
         instrument.write('TRAC A')
-        nop = instrument.ask('POIN?')
-        Z_data = instrument.ask_for_values('OUTPDTRC?')
-        Z = range(int(nop))
+        nop = ask(instrument, 'POIN?')
+        Z_data = ask_for_values(instrument, 'OUTPDTRC?')
+        Z = [0] * int(nop)
         for x in range(0, int(nop)):
             Z[x] = Z_data[2*x]
         instrument.write('TRAC B')
-        Theta_data = instrument.ask_for_values('OUTPDTRC?')
-        Theta = range(int(nop))
+        Theta_data = ask_for_values(instrument, 'OUTPDTRC?')
+        Theta = [0] * int(nop)
         for x in range(0, int(nop)):
             Theta[x] = Theta_data[2*x]
-        Freq = instrument.ask_for_values('OUTPSWPRM?')
+        Freq = ask_for_values(instrument, 'OUTPSWPRM?')
+        Z = np.asarray(Z)
+        Theta = np.asarray(Theta)
+        Freq = np.asarray(Freq)
         #stats = instrument.ask_for_values('MEASTAT?')
         e0 = 8.85418782e-12
         d = espessura*10**(-3)
@@ -419,7 +478,7 @@ class StartQT4(QtGui.QMainWindow):
         path = str(self.ui.LineEdit_SavePath.text())
         filename = str(id_amostra)
         M = np.c_[np.asarray(Freq), np.asarray(Z), np.asarray(Theta), er, ei]
-        np.savetxt('%s\%s.txt' % (path, filename), M, fmt='%1.4e',
+        np.savetxt(os.path.join(path, '%s.txt' % filename), M, fmt='%1.4e',
                    delimiter='\t',
                    header='#Freq(Hz)\t Z(ohms)\t Phase(degrees) \t er_Re \t er_Im',
                    comments='#sample %s\n#d(mm) = %s\n#D(mm) = %s \n#sweep = %s \n#voltage = %s'
@@ -444,8 +503,6 @@ class StartQT4(QtGui.QMainWindow):
         ax = self.fig.add_subplot(111)
 
         # discards the old graph
-        ax.hold(False)
-
         # plot data
         ax.plot(data, '*-')
 
@@ -454,7 +511,7 @@ class StartQT4(QtGui.QMainWindow):
         self.update_table(data, data, data, data, data)
 
     def plot_erei(self):
-        self.plot_data(Freq, 'Frequency (Hz)', er, '$\epsilon\'$', ei, '$\epsilon\'\'$', 'log')
+        self.plot_data(Freq, 'Frequency (Hz)', er, r"$\epsilon'$", ei, r"$\epsilon''$", 'log')
 
     def plot_RC(self):
         self.plot_data(Freq, 'Frequency (Hz)', R, 'R (Ohms)', C, 'C (F)', 'log')
@@ -465,7 +522,6 @@ class StartQT4(QtGui.QMainWindow):
     def plot_ZrZi(self):
         self.fig.clear()
         self.ax1 = self.fig.add_subplot(111)
-        self.ax1.hold(False)
         self.ax1.plot(Zr, Zi, 'blue')
         self.ax1.set_title(self.ui.amostra_id.text(), fontsize='12')
         self.ax1.grid(which='both')
@@ -479,10 +535,8 @@ class StartQT4(QtGui.QMainWindow):
 
         :rtype : object
         """
-        self.fig.hold(False)
         self.fig.clear()
         self.ax1 = self.fig.add_subplot(111)
-        self.ax1.hold(False)
         self.ax1.plot(x, y1, 'blue')
         self.ax1.set_title(self.ui.amostra_id.text(), fontsize='12')
         self.ax2 = self.ax1.twinx()

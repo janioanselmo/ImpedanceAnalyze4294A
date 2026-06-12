@@ -1,6 +1,6 @@
 # ImpedanceAnalyze4294A
 
-Interface gráfica em Python/PyQt4 para aquisição, importação e análise de espectros de impedância com o analisador Keysight/Agilent 4294A.
+Interface gráfica em Python/PyQt5 para aquisição, importação e análise de espectros de impedância com o analisador Keysight/Agilent 4294A.
 
 ---
 
@@ -14,7 +14,7 @@ A aplicação permite detectar/conectar o instrumento via VISA, executar calibra
 
 ### Funcionalidades
 
-- Interface gráfica em PyQt4.
+- Interface gráfica em PyQt5.
 - Detecção de instrumentos via VISA/PyVISA.
 - Suporte a simulação por `pyvisa-sim`.
 - Conexão com analisador Keysight/Agilent 4294A.
@@ -32,7 +32,7 @@ A aplicação permite detectar/conectar o instrumento via VISA, executar calibra
 | Arquivo | Descrição |
 |---|---|
 | `script.py` | Script principal da aplicação e rotinas de aquisição/análise |
-| `interface.py` | Interface Python gerada a partir do arquivo `.ui` pelo `pyuic4` |
+| `interface.py` | Interface Python gerada originalmente a partir do arquivo `.ui` e adaptada para PyQt5 |
 | `InterfaceImpedSpec.ui` | Layout Qt editável no Qt Designer |
 | `requirements.txt` | Dependências Python instaláveis por `pip` |
 | `run_windows.bat` | Criação de ambiente virtual, instalação de dependências e execução no Windows |
@@ -44,36 +44,33 @@ A aplicação permite detectar/conectar o instrumento via VISA, executar calibra
 
 ### Dependências
 
-Este projeto é legado e depende de bibliotecas do ecossistema Python 2/PyQt4:
+Este projeto foi modernizado para execução com Python 3/PyQt5:
 
 ```text
 numpy
 matplotlib
-astropy
-docutils
 pyvisa
 pyvisa-sim
-PyQt4
+PyQt5
 ```
 
 Também é necessário ter os drivers do analisador 4294A instalados e corretamente reconhecidos pelo sistema operacional.
 
 ### Instalação
 
-Em ambientes compatíveis com PyQt4:
+Em ambientes Python 3:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-No Fedora, o ambiente original indicava:
+No Fedora, instale os pacotes Qt/VISA necessários ao sistema conforme seu ambiente:
 
 ```bash
-sudo dnf install pyqt4-devel
-sudo dnf install python-matplotlib-qt
+sudo dnf install python3-qt5
 ```
 
-Em sistemas atuais, PyQt4 pode não estar disponível nos repositórios padrão. Nesse caso, use um ambiente legado compatível ou avalie portar a interface para PyQt5/PySide antes de executar em produção.
+Também é necessário ter os drivers VISA do instrumento instalados para conexão com hardware real.
 
 ### Execução
 
@@ -111,12 +108,12 @@ Os arquivos exportados/importados armazenam colunas numéricas de frequência, i
 
 ### Observações Técnicas
 
-- O código usa `matplotlib` com backend `Qt4Agg`.
-- O arquivo `interface.py` é gerado automaticamente; alterações visuais devem ser feitas em `InterfaceImpedSpec.ui` e regeneradas com `pyuic4`.
+- O código usa `matplotlib` com backend `Qt5Agg`.
+- O arquivo `interface.py` veio de uma geração PyQt4 e contém shims de compatibilidade PyQt5. Alterações visuais devem ser feitas em `InterfaceImpedSpec.ui` e regeneradas/portadas para PyQt5.
 - O comando de regeneração é:
 
 ```bash
-pyuic4 InterfaceImpedSpec.ui -o interface.py
+pyuic5 InterfaceImpedSpec.ui -o interface.py
 ```
 
 - Publicações que usem resultados obtidos com este software devem citar o software e os trabalhos associados ao ImpedSpec.
@@ -138,7 +135,7 @@ The application can detect/connect the instrument through VISA, run open/short c
 
 ### Features
 
-- PyQt4 graphical interface.
+- PyQt5 graphical interface.
 - Instrument detection through VISA/PyVISA.
 - `pyvisa-sim` support.
 - Connection to the Keysight/Agilent 4294A impedance analyzer.
@@ -156,7 +153,7 @@ The application can detect/connect the instrument through VISA, run open/short c
 | File | Description |
 |---|---|
 | `script.py` | Main application script and acquisition/analysis routines |
-| `interface.py` | Python UI generated from the `.ui` file with `pyuic4` |
+| `interface.py` | Python UI originally generated from the `.ui` file and adapted for PyQt5 |
 | `InterfaceImpedSpec.ui` | Qt layout editable in Qt Designer |
 | `requirements.txt` | Python dependencies installable with `pip` |
 | `run_windows.bat` | Virtual environment setup, dependency installation and Windows launcher |
@@ -168,36 +165,33 @@ The application can detect/connect the instrument through VISA, run open/short c
 
 ### Dependencies
 
-This is a legacy project and depends on the Python 2/PyQt4 ecosystem:
+This project has been modernized to run with Python 3/PyQt5:
 
 ```text
 numpy
 matplotlib
-astropy
-docutils
 pyvisa
 pyvisa-sim
-PyQt4
+PyQt5
 ```
 
 The 4294A drivers must also be installed and correctly recognized by the operating system.
 
 ### Installation
 
-In PyQt4-compatible environments:
+In Python 3 environments:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-On Fedora, the original environment used:
+On Fedora, install the system Qt/VISA packages required by your environment:
 
 ```bash
-sudo dnf install pyqt4-devel
-sudo dnf install python-matplotlib-qt
+sudo dnf install python3-qt5
 ```
 
-On current systems, PyQt4 may not be available from default repositories. Use a compatible legacy environment or consider porting the UI to PyQt5/PySide before production use.
+The 4294A VISA drivers are still required for real hardware connections.
 
 ### Running
 
@@ -235,12 +229,12 @@ Exported/imported files store numeric columns for frequency, impedance, phase an
 
 ### Technical Notes
 
-- The code uses `matplotlib` with the `Qt4Agg` backend.
-- `interface.py` is generated automatically; visual changes should be made in `InterfaceImpedSpec.ui` and regenerated with `pyuic4`.
+- The code uses `matplotlib` with the `Qt5Agg` backend.
+- `interface.py` came from a PyQt4 generation and includes PyQt5 compatibility shims. Visual changes should be made in `InterfaceImpedSpec.ui` and regenerated/ported to PyQt5.
 - Regeneration command:
 
 ```bash
-pyuic4 InterfaceImpedSpec.ui -o interface.py
+pyuic5 InterfaceImpedSpec.ui -o interface.py
 ```
 
 - Publications using results obtained with this software should cite the software and the related ImpedSpec papers.

@@ -3,10 +3,18 @@
 # Form implementation generated from reading ui file 'InterfaceImpedSpec.ui'
 #
 # Created by: PyQt4 UI code generator 4.12.1
+# Runtime compatibility shims below allow this generated UI to run with PyQt5.
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt4 import QtCore, QtGui
+try:
+    from PyQt5 import QtCore, QtGui, QtWidgets
+    for _name in dir(QtWidgets):
+        if not hasattr(QtGui, _name):
+            setattr(QtGui, _name, getattr(QtWidgets, _name))
+    QtCore.QVariant = lambda value=None: value
+except ImportError:
+    from PyQt4 import QtCore, QtGui
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -386,7 +394,7 @@ class Ui_MainWindow(object):
         self.layoutWidget.setGeometry(QtCore.QRect(330, 1, 781, 411))
         self.layoutWidget.setObjectName(_fromUtf8("layoutWidget"))
         self.gridLayout_9 = QtGui.QGridLayout(self.layoutWidget)
-        self.gridLayout_9.setMargin(0)
+        self.gridLayout_9.setContentsMargins(0, 0, 0, 0)
         self.gridLayout_9.setObjectName(_fromUtf8("gridLayout_9"))
         self.verticalLayout = QtGui.QVBoxLayout()
         self.verticalLayout.setSizeConstraint(QtGui.QLayout.SetMinimumSize)
@@ -398,7 +406,7 @@ class Ui_MainWindow(object):
         self.layoutWidget1.setObjectName(_fromUtf8("layoutWidget1"))
         self.Layout_btn_plot = QtGui.QHBoxLayout(self.layoutWidget1)
         self.Layout_btn_plot.setSizeConstraint(QtGui.QLayout.SetMaximumSize)
-        self.Layout_btn_plot.setMargin(0)
+        self.Layout_btn_plot.setContentsMargins(0, 0, 0, 0)
         self.Layout_btn_plot.setObjectName(_fromUtf8("Layout_btn_plot"))
         self.btn_plot_permi = QtGui.QPushButton(self.layoutWidget1)
         self.btn_plot_permi.setEnabled(False)
@@ -775,8 +783,8 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
-        QtCore.QObject.connect(self.checkbox_ptavg, QtCore.SIGNAL(_fromUtf8("toggled(bool)")), self.spin_ptavg.setEnabled)
-        QtCore.QObject.connect(self.checkbox_ptavg, QtCore.SIGNAL(_fromUtf8("toggled(bool)")), self.label_10.setEnabled)
+        self.checkbox_ptavg.toggled.connect(self.spin_ptavg.setEnabled)
+        self.checkbox_ptavg.toggled.connect(self.label_10.setEnabled)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
