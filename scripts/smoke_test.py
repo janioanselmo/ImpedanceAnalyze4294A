@@ -47,6 +47,10 @@ def assert_radio_gap(log_radio, linear_radio, expected=8):
     assert gap == expected, 'unexpected radio gap: %s' % gap
 
 
+def assert_radio_offset(log_radio, minimum_x=220):
+    assert log_radio.geometry().x() >= minimum_x, 'unexpected radio offset: %s' % log_radio.geometry().x()
+
+
 def main():
     app = QtWidgets.QApplication([])
     window = script.StartQT4()
@@ -69,6 +73,7 @@ def main():
     ]:
         window.ui.tabWidget.setCurrentIndex(tab_index)
         app.processEvents()
+        assert_radio_offset(log_radio)
         assert_radio_gap(log_radio, linear_radio)
 
     window.ui.checkbox_pyvisasim.setChecked(True)

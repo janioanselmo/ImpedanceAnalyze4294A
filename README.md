@@ -19,6 +19,7 @@ A aplicação permite detectar/conectar o instrumento via VISA, executar calibra
 - Tabela de resultados com área ampliada, linhas alternadas, cabeçalhos compactos e colunas proporcionais.
 - Gráficos com margens ajustadas para manter rótulos de eixos visíveis.
 - Controles de varredura `Log`/`Linear` alinhados de forma consistente nas três abas.
+- Controles de varredura `Log`/`Linear` deslocados para a direita e alinhados abaixo da coluna de valores numéricos.
 - Detecção de instrumentos via VISA/PyVISA.
 - Suporte a simulação por `pyvisa-sim`.
 - Conexão com analisador Keysight/Agilent 4294A.
@@ -170,6 +171,7 @@ The application can detect/connect the instrument through VISA, run open/short c
 - Results table with expanded viewing area, alternating rows, compact headers, and proportional columns.
 - Plots with adjusted margins to keep axis labels visible.
 - `Log`/`Linear` sweep controls aligned consistently across the three tabs.
+- `Log`/`Linear` sweep controls shifted to the right and aligned below the numeric value column.
 - Instrument detection through VISA/PyVISA.
 - `pyvisa-sim` support.
 - Connection to the Keysight/Agilent 4294A impedance analyzer.
