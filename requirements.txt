@@ -3,3 +3,7 @@ matplotlib
 PyQt5
 pyvisa
 pyvisa-sim
+
+# Hardware connections also require a system VISA backend/driver, such as
+# NI-VISA or Keysight IO Libraries Suite. That driver is not installable
+# through pip, so it is documented in README.md instead.

@@ -57,6 +57,14 @@ PyQt5
 
 Também é necessário ter os drivers do analisador 4294A instalados e corretamente reconhecidos pelo sistema operacional.
 
+#### Driver VISA
+
+`pyvisa` é apenas a biblioteca Python usada pela aplicação. Para conectar a um instrumento físico, o computador também precisa de um backend/driver VISA instalado no sistema, como **NI-VISA** ou **Keysight IO Libraries Suite**.
+
+Esse driver permite que o sistema operacional detecte e exponha instrumentos GPIB, USB ou LAN para a aplicação. Ele não pode ser instalado pelo `requirements.txt`, porque não é um pacote Python comum; deve ser instalado pelo instalador do fabricante.
+
+O `pyvisa-sim` serve apenas para testes sem instrumento real.
+
 ### Instalação
 
 Em ambientes Python 3:
@@ -179,6 +187,14 @@ PyQt5
 ```
 
 The 4294A drivers must also be installed and correctly recognized by the operating system.
+
+#### VISA Driver
+
+`pyvisa` is only the Python library used by the application. To connect to a physical instrument, the computer also needs a system VISA backend/driver, such as **NI-VISA** or **Keysight IO Libraries Suite**.
+
+That driver lets the operating system detect and expose GPIB, USB, or LAN instruments to the application. It cannot be installed through `requirements.txt` because it is not a regular Python package; it must be installed with the vendor installer.
+
+`pyvisa-sim` is only for tests without real hardware.
 
 ### Installation
 
