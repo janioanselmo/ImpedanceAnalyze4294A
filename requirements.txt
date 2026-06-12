@@ -1,0 +1,6 @@
+numpy
+matplotlib
+astropy
+docutils
+pyvisa
+pyvisa-sim

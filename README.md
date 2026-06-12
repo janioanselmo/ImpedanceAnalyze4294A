@@ -34,6 +34,9 @@ A aplicação permite detectar/conectar o instrumento via VISA, executar calibra
 | `script.py` | Script principal da aplicação e rotinas de aquisição/análise |
 | `interface.py` | Interface Python gerada a partir do arquivo `.ui` pelo `pyuic4` |
 | `InterfaceImpedSpec.ui` | Layout Qt editável no Qt Designer |
+| `requirements.txt` | Dependências Python instaláveis por `pip` |
+| `run_windows.bat` | Criação de ambiente virtual, instalação de dependências e execução no Windows |
+| `run_linux_mac.sh` | Criação de ambiente virtual, instalação de dependências e execução no Linux/macOS |
 | `sample1.txt` | Arquivo de exemplo para importação |
 | `sample2.txt` | Arquivo de exemplo para importação |
 | `sample3.txt` | Arquivo de exemplo para importação |
@@ -60,7 +63,7 @@ Também é necessário ter os drivers do analisador 4294A instalados e corretame
 Em ambientes compatíveis com PyQt4:
 
 ```bash
-pip install astropy docutils pyvisa pyvisa-sim
+pip install -r requirements.txt
 ```
 
 No Fedora, o ambiente original indicava:
@@ -76,6 +79,18 @@ Em sistemas atuais, PyQt4 pode não estar disponível nos repositórios padrão.
 
 ```bash
 python script.py
+```
+
+No Windows, também é possível criar o ambiente virtual, instalar dependências e executar com:
+
+```bat
+run_windows.bat
+```
+
+No Linux/macOS:
+
+```bash
+./run_linux_mac.sh
 ```
 
 Para testar sem instrumento físico, habilite o modo de simulação na interface quando o ambiente `pyvisa-sim` estiver configurado.
@@ -143,6 +158,9 @@ The application can detect/connect the instrument through VISA, run open/short c
 | `script.py` | Main application script and acquisition/analysis routines |
 | `interface.py` | Python UI generated from the `.ui` file with `pyuic4` |
 | `InterfaceImpedSpec.ui` | Qt layout editable in Qt Designer |
+| `requirements.txt` | Python dependencies installable with `pip` |
+| `run_windows.bat` | Virtual environment setup, dependency installation and Windows launcher |
+| `run_linux_mac.sh` | Virtual environment setup, dependency installation and Linux/macOS launcher |
 | `sample1.txt` | Sample file for import |
 | `sample2.txt` | Sample file for import |
 | `sample3.txt` | Sample file for import |
@@ -169,7 +187,7 @@ The 4294A drivers must also be installed and correctly recognized by the operati
 In PyQt4-compatible environments:
 
 ```bash
-pip install astropy docutils pyvisa pyvisa-sim
+pip install -r requirements.txt
 ```
 
 On Fedora, the original environment used:
@@ -185,6 +203,18 @@ On current systems, PyQt4 may not be available from default repositories. Use a 
 
 ```bash
 python script.py
+```
+
+On Windows, you can also create the virtual environment, install dependencies and run with:
+
+```bat
+run_windows.bat
+```
+
+On Linux/macOS:
+
+```bash
+./run_linux_mac.sh
 ```
 
 To test without physical hardware, enable the simulation mode in the interface when `pyvisa-sim` is configured.
