@@ -42,6 +42,11 @@ def assert_group_gap(first, second, minimum=10):
     )
 
 
+def assert_radio_gap(log_radio, linear_radio, expected=8):
+    gap = linear_radio.geometry().x() - (log_radio.geometry().x() + log_radio.width())
+    assert gap == expected, 'unexpected radio gap: %s' % gap
+
+
 def main():
     app = QtWidgets.QApplication([])
     window = script.StartQT4()
@@ -57,6 +62,14 @@ def main():
     assert_group_gap(window.ui.groupBox__amostra, window.ui.groupBox_analise)
     assert_group_gap(window.ui.groupBox_analise, window.ui.btn_run)
     assert_group_gap(window.ui.groupBox__amostra_2, window.ui.groupBox_analise_3)
+    for tab_index, log_radio, linear_radio in [
+        (0, window.ui.var_log_2, window.ui.var_lin_2),
+        (1, window.ui.var_log, window.ui.var_lin),
+        (2, window.ui.var_log_4, window.ui.var_lin_4),
+    ]:
+        window.ui.tabWidget.setCurrentIndex(tab_index)
+        app.processEvents()
+        assert_radio_gap(log_radio, linear_radio)
 
     window.ui.checkbox_pyvisasim.setChecked(True)
     window.instrument_detection()

@@ -196,6 +196,27 @@ class StartQT4(QtGui.QMainWindow):
         ]:
             label.setMinimumWidth(80)
 
+        for label in [ui.label_7, ui.label_16, ui.label_30]:
+            label.setFixedWidth(170)
+
+        for radio in [ui.var_log, ui.var_lin, ui.var_log_2, ui.var_lin_2, ui.var_log_4, ui.var_lin_4]:
+            radio.setFixedWidth(100)
+            radio.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+
+        for layout in [ui.horizontalLayout_15, ui.horizontalLayout_8, ui.horizontalLayout_31]:
+            layout.setSpacing(8)
+            layout.setStretch(0, 0)
+            layout.setStretch(1, 0)
+            layout.setStretch(2, 0)
+
+        ui.horizontalLayout_15.setAlignment(ui.var_log_2, QtCore.Qt.AlignLeft)
+        ui.horizontalLayout_15.setAlignment(ui.var_lin_2, QtCore.Qt.AlignLeft)
+        ui.horizontalLayout_8.setAlignment(ui.var_log, QtCore.Qt.AlignLeft)
+        ui.horizontalLayout_8.setAlignment(ui.var_lin, QtCore.Qt.AlignLeft)
+        ui.horizontalLayout_31.setAlignment(ui.var_log_4, QtCore.Qt.AlignLeft)
+        ui.horizontalLayout_31.setAlignment(ui.var_lin_4, QtCore.Qt.AlignLeft)
+        ui.horizontalLayout_2.setAlignment(ui.horizontalLayout_8, QtCore.Qt.AlignLeft)
+
         for field in [
             ui.spin_freq_inicial, ui.spin_freq_final, ui.num_pontos,
             ui.spinbox_tensao, ui.spinbox_banda, ui.spin_ptavg,
