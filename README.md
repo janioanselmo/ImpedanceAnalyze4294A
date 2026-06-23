@@ -103,6 +103,22 @@ No Windows, também é possível criar o ambiente virtual, instalar dependência
 run_windows.bat
 ```
 
+Para gerar o executável Windows e o instalador local:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\build_windows_release.ps1
+```
+
+Os artefatos são gerados em `dist/`:
+
+```text
+ImpedanceAnalyzer4294A-IEB-UFSC\ImpedanceAnalyzer4294A-IEB-UFSC.exe
+ImpedanceAnalyzer4294A-IEB-UFSC-portable.zip
+ImpedanceAnalyzer4294A-IEB-UFSC-Setup.bat
+```
+
+O instalador `.bat` copia o aplicativo para `%LOCALAPPDATA%\Programs\ImpedanceAnalyzer4294A-IEB-UFSC`, cria um atalho na Área de Trabalho e abre o programa.
+
 Para uma máquina sem internet, baixe as dependências em uma máquina conectada:
 
 ```bat
@@ -170,6 +186,8 @@ Se o endereço GPIB do instrumento não for `17`, troque o número no último co
 
 No momento, `10.1.1.2` é o IP padrão sugerido pela aplicação para a conexão Ethernet. O campo de equipamento é editável, então outro endereço VISA pode ser digitado manualmente quando necessário. Uma melhoria planejada é adicionar um campo dedicado para informar apenas o IP e gerar automaticamente os endereços TCPIP correspondentes.
 
+Se a conexão funcionar, a varredura terminar e a coleta falhar com `UnicodeDecodeError: 'ascii' codec can't decode byte`, atualize para uma versão que use transferência ASCII (`FORM4`) antes de ler `OUTPDTRC?` e `OUTPSWPRM?`. Esse erro ocorre quando o instrumento responde dados binários e o PyVISA tenta interpretá-los como texto.
+
 ### Auditoria rápida
 
 Depois de alterações no código, rode:
@@ -190,6 +208,14 @@ O smoke test abre a interface em modo offscreen, verifica espaçamentos básicos
 5. Configure a amostra, faixa de frequência, número de pontos e parâmetros de aquisição.
 6. Execute a análise.
 7. Visualize os gráficos e salve os dados medidos.
+
+### Análise genérica e geometria da amostra
+
+Os campos `D` e `t` são opcionais. Eles representam a geometria de uma amostra em placas paralelas e só são usados para calcular permissividade (`eps'` e `eps''`).
+
+Para uso genérico, como medições de impedância em placas paralelas, bolhas, eletrólise, células eletroquímicas ou outros arranjos que não devem ser tratados como dielétrico plano padrão, deixe `D` e `t` em branco. A aquisição continuará salvando e exibindo frequência, impedância, fase, resistência, capacitância e os gráficos `Z/Theta`, `R/C` e `Zr/Zi`.
+
+Quando `D` e `t` ficam em branco, o gráfico de permissividade é desabilitado e as colunas `eps'` e `eps''` são salvas como `nan`, pois esses valores dependem de um modelo geométrico.
 
 ### Formato dos Dados
 
@@ -342,6 +368,14 @@ The smoke test opens the interface in offscreen mode, checks basic spacing, trig
 5. Configure sample data, frequency range, point count and acquisition parameters.
 6. Run the analysis.
 7. Inspect plots and save measured data.
+
+### Generic Analysis and Sample Geometry
+
+The `D` and `t` fields are optional. They describe a parallel-plate sample geometry and are only used to calculate permittivity (`eps'` and `eps''`).
+
+For generic use, such as impedance measurements with plates, bubbles, electrolysis, electrochemical cells or other setups that should not be treated as a standard flat dielectric sample, leave `D` and `t` blank. The acquisition will still save and display frequency, impedance, phase, resistance, capacitance and the `Z/Theta`, `R/C` and `Zr/Zi` plots.
+
+When `D` and `t` are blank, the permittivity plot is disabled and the `eps'`/`eps''` columns are saved as `nan`, because those values depend on a geometric model.
 
 ### Data Format
 

@@ -1,5 +1,6 @@
 # coding: latin-1
 import os
+import re
 import sys
 import tempfile
 import traceback
@@ -43,6 +44,8 @@ DEFAULT_TCPIP_RESOURCES = [
     'TCPIP0::10.1.1.2::5025::SOCKET',
     'TCPIP0::10.1.1.2::gpib0,17::INSTR',
 ]
+rm = None
+instrument = None
 
 try:
     unicode
@@ -65,6 +68,82 @@ def ask_for_values(resource, command):
     if hasattr(resource, 'ask_for_values'):
         return resource.ask_for_values(command)
     return resource.query_ascii_values(command)
+
+
+def ask_for_int(resource, command):
+    return int(float(str(ask(resource, command)).strip()))
+
+
+def configure_ascii_data_transfer(resource):
+    resource.write('FORM4')
+
+
+def primary_trace_values(values, expected_points, command):
+    values = list(values)
+    if len(values) >= expected_points * 2:
+        return [values[2*x] for x in range(expected_points)]
+    if len(values) == expected_points:
+        return values
+    raise ValueError(
+        '%s returned %s values for %s points; expected %s or %s.'
+        % (command, len(values), expected_points, expected_points, expected_points * 2)
+    )
+
+
+def safe_float(text, field_name):
+    try:
+        return float(str(text).replace(',', '.'))
+    except ValueError:
+        raise ValueError('%s must be a numeric value.' % field_name)
+
+
+def optional_float(text, field_name):
+    text = str(text).strip()
+    if not text:
+        return None
+    value = safe_float(text, field_name)
+    if value <= 0:
+        raise ValueError('%s must be greater than zero.' % field_name)
+    return value
+
+
+def safe_filename(name):
+    filename = re.sub(r'[<>:"/\\|?*]+', '_', str(name)).strip()
+    return filename or 'measurement'
+
+
+def compute_response(freq, impedance, theta, diameter_mm=None, thickness_mm=None):
+    freq = np.asarray(freq, dtype=float)
+    impedance = np.asarray(impedance, dtype=float)
+    theta = np.asarray(theta, dtype=float)
+    angle = theta*np.pi/180
+    with np.errstate(divide='ignore', invalid='ignore'):
+        zr = impedance*np.cos(angle)
+        zi = impedance*np.sin(angle)*(-1)
+        resistance = impedance/np.cos(angle)
+        capacitance = zi/(zr*freq*resistance*2*np.pi)
+
+    if diameter_mm is None or thickness_mm is None:
+        er_value = np.full(freq.shape, np.nan, dtype=float)
+        ei_value = np.full(freq.shape, np.nan, dtype=float)
+    else:
+        e0 = 8.85418782e-12
+        thickness_m = thickness_mm*10**(-3)
+        diameter_m = diameter_mm*10**(-3)
+        area = (np.pi*(diameter_m**2))/4
+        with np.errstate(divide='ignore', invalid='ignore'):
+            er_value = (capacitance*thickness_m)/(e0*area)
+            ei_value = er_value*np.tan((90+theta)*np.pi/180)
+
+    return zr, zi, resistance, capacitance, er_value, ei_value
+
+
+def has_permittivity_data(er_value, ei_value):
+    return bool(np.any(np.isfinite(er_value)) and np.any(np.isfinite(ei_value)))
+
+
+def metadata_value(value):
+    return 'N/A' if value is None else value
 
 
 def wait_for_operation_complete(resource):
@@ -179,9 +258,9 @@ class StartQT4(QtGui.QMainWindow):
             ui.checkbox_ptavg: 'Average',
             ui.label_10: 'Avg.:',
             ui.label_2: 'Sample ID',
-            ui.label_11: 'D (mm):',
-            ui.label_12: 't (mm):',
-            ui.btn_plot_permi: 'eps vs f',
+            ui.label_11: 'D opt. (mm):',
+            ui.label_12: 't opt. (mm):',
+            ui.btn_plot_permi: 'eps (geom)',
             ui.btn_plot_ZT: 'Z/Theta',
             ui.btn_plot_RC: 'R/C',
             ui.label_29: 'Start:',
@@ -191,16 +270,16 @@ class StartQT4(QtGui.QMainWindow):
             ui.checkbox_ptavg_4: 'Average',
             ui.label_34: 'Avg.:',
             ui.label_38: 'Sample ID',
-            ui.label_35: 'D (mm):',
-            ui.label_36: 't (mm):',
+            ui.label_35: 'D opt. (mm):',
+            ui.label_36: 't opt. (mm):',
             ui.label_43: 'Sample ID',
             ui.label_46: 'Start:',
             ui.label_45: 'Stop:',
             ui.label_48: 'Points:',
             ui.label_52: 'Average:',
             ui.label_51: 'Avg.:',
-            ui.label_40: 'D (mm):',
-            ui.label_41: 't (mm):',
+            ui.label_40: 'D opt. (mm):',
+            ui.label_41: 't opt. (mm):',
             ui.pushButton: 'Delete',
             ui.commandLinkButton: 'Start Program',
         }
@@ -334,17 +413,21 @@ class StartQT4(QtGui.QMainWindow):
             data = data.reshape(1, -1)
 
         amostra = 'Identifiction not found'
-        diametro = 1
-        espessura = 1
+        diametro = None
+        espessura = None
         with open(file_path) as arquivo:
             for line in arquivo:
                 normalized_line = line.strip()
                 normalized_key = normalized_line.split()[0] if normalized_line.split() else ''
                 normalized_key_lower = normalized_key.lower()
                 if normalized_key in ('#D(mm)', '#D'):
-                    diametro = float(line.rstrip('\n').split()[-1])
+                    value = line.rstrip('\n').split()[-1]
+                    if value.upper() != 'N/A':
+                        diametro = safe_float(value, 'Sample diameter')
                 if normalized_key in ('#d(mm)', '#d'):
-                    espessura = float(line.rstrip('\n').split()[-1])
+                    value = line.rstrip('\n').split()[-1]
+                    if value.upper() != 'N/A':
+                        espessura = safe_float(value, 'Sample thickness')
                 if normalized_key_lower == '#sample':
                     amostra = ' '.join(line.rstrip('\n').split()[1:])
                 if normalized_key_lower == '#sweep':
@@ -357,33 +440,26 @@ class StartQT4(QtGui.QMainWindow):
         Freq = data[:, 0]
         Z = data[:, 1]
         Theta = data[:, 2]
-        e0 = 8.85418782e-12
-        d = espessura*10**(-3)
-        D = diametro*10**(-3)
-        # er = (2*d*np.cos(np.asarray(Theta)*np.pi/180))/(e0*np.asarray(Z)*np.asarray(Freq)*(D**2)*(np.pi*np.pi)*np.tan(np.asarray(Theta)*np.pi/180))
-        A = (np.pi*(D**2))/4
-        Zr = Z*np.cos(np.asarray(Theta)*np.pi/180)
-        Zi = Z*np.sin(np.asarray(Theta)*np.pi/180)*(-1)
-        R = Z/np.cos(np.asarray(Theta)*np.pi/180)
-        C = Zi/(Zr*np.asarray(Freq)*R*2*np.pi)
-
-        er = (C*d)/(e0*A)
-        ei = er*np.tan((90+np.asarray(Theta))*np.pi/180)
-        # ei = er*np.tan((90+np.asarray(Theta))*np.pi/180
+        d = None if espessura is None else espessura*10**(-3)
+        D = None if diametro is None else diametro*10**(-3)
+        Zr, Zi, R, C, er, ei = compute_response(Freq, Z, Theta, diametro, espessura)
         self.ui.btn_plot_ZrZi.setEnabled(True)
         self.ui.btn_plot_ZT.setEnabled(True)
-        self.ui.btn_plot_permi.setEnabled(True)
+        self.ui.btn_plot_permi.setEnabled(has_permittivity_data(er, ei))
         self.ui.btn_plot_RC.setEnabled(True)
         self.ui.groupBox__amostra.setEnabled(True)
         self.ui.groupBox_analise.setEnabled(True)
         self.ui.amostra_id.setText(amostra)
         self.ui.LineEdit_SavePath.setText(path)
-        self.ui.tbox_diametro.setText(str(diametro))
-        self.ui.tbox_espessura.setText(str(espessura))
+        self.ui.tbox_diametro.setText('' if diametro is None else str(diametro))
+        self.ui.tbox_espessura.setText('' if espessura is None else str(espessura))
         self.ui.spin_freq_inicial.setValue(int(Freq[0]))
         self.ui.spin_freq_final.setValue(int(Freq[-1]))
         self.ui.num_pontos.setValue(int(nop))
-        self.plot_erei()
+        if has_permittivity_data(er, ei):
+            self.plot_erei()
+        else:
+            self.plot_ZT()
         self.update_table(np.ndarray.tolist(Freq), np.ndarray.tolist(Z), np.ndarray.tolist(Theta),
                           np.ndarray.tolist(er), np.ndarray.tolist(ei))
 
@@ -460,6 +536,7 @@ class StartQT4(QtGui.QMainWindow):
             self.ui.label_inst_name.setText(instrument_name)
             self.ui.group_calibration.setEnabled(True)
         except Exception:
+            instrument = None
             self.show_error(
                 'Instrument query error',
                 'Connected to the resource, but could not read the instrument identification.',
@@ -468,6 +545,22 @@ class StartQT4(QtGui.QMainWindow):
 
 
     def open_calibration(self):
+        try:
+            self._open_calibration()
+        except Exception:
+            self.show_error(
+                'Open compensation error',
+                'Could not complete the OPEN compensation.',
+                traceback.format_exc(),
+            )
+
+    def _open_calibration(self):
+        if instrument is None:
+            self.show_error(
+                'Instrument error',
+                'Instrument not connected or not recognized.',
+            )
+            return
         instrument.write('HOLD')
         warning = QtGui.QMessageBox()
         warning.setText('Please, set the accessory to the OPEN configuration')
@@ -498,6 +591,22 @@ class StartQT4(QtGui.QMainWindow):
             pass
 
     def short_calibration(self):
+        try:
+            self._short_calibration()
+        except Exception:
+            self.show_error(
+                'Short compensation error',
+                'Could not complete the SHORT compensation.',
+                traceback.format_exc(),
+            )
+
+    def _short_calibration(self):
+        if instrument is None:
+            self.show_error(
+                'Instrument error',
+                'Instrument not connected or not recognized.',
+            )
+            return
         instrument.write('HOLD')
         warning = QtGui.QMessageBox()
         warning.setText('Please, set the accessory to the SHORT configuration')
@@ -531,6 +640,15 @@ class StartQT4(QtGui.QMainWindow):
         path = QtGui.QFileDialog.getExistingDirectory(self, 'Select destination folder')
         self.ui.LineEdit_SavePath.setText(path)
 
+    def optional_geometry(self):
+        diametro = optional_float(self.ui.tbox_diametro.text(), 'Sample diameter')
+        espessura = optional_float(self.ui.tbox_espessura.text(), 'Sample thickness')
+        if (diametro is None) != (espessura is None):
+            raise ValueError(
+                'Provide both D and t to calculate permittivity, or leave both blank for generic impedance analysis.'
+            )
+        return diametro, espessura
+
     def no_blank_fields(self):
         if str(self.ui.amostra_id.text()) == '':
             warning = QtGui.QMessageBox()
@@ -547,10 +665,12 @@ class StartQT4(QtGui.QMainWindow):
             warning.addButton('Ok', QtGui.QMessageBox.AcceptRole)
             warning.exec_()
             return False
-        if str(self.ui.tbox_diametro.text()) == '' or str(self.ui.tbox_espessura.text()) == '':
+        try:
+            self.optional_geometry()
+        except ValueError as error:
             warning = QtGui.QMessageBox()
             warning.setIcon(QtGui.QMessageBox.Warning)
-            warning.setText('You need to provide the sample dimensions for permittivity and capacitance computations')
+            warning.setText(str(error))
             warning.addButton('Ok', QtGui.QMessageBox.AcceptRole)
             warning.exec_()
             self.ui.tbox_diametro.hasFocus()
@@ -560,8 +680,16 @@ class StartQT4(QtGui.QMainWindow):
 
     def run_analysis(self):
         try:
-            instrument
-        except NameError:
+            self._run_analysis()
+        except Exception:
+            self.show_error(
+                'Acquisition error',
+                'The instrument sweep finished, but the data could not be collected or processed.',
+                traceback.format_exc(),
+            )
+
+    def _run_analysis(self):
+        if instrument is None:
             errorbox = QtGui.QMessageBox()
             errorbox.setIcon(QtGui.QMessageBox.Critical)
             errorbox.setText('Instrument no recognized or not connected.')
@@ -580,8 +708,7 @@ class StartQT4(QtGui.QMainWindow):
         else:
             paver = 'OFF'
         id_amostra = self.ui.amostra_id.text()
-        diametro = float(self.ui.tbox_diametro.text())
-        espessura = float(self.ui.tbox_espessura.text())
+        diametro, espessura = self.optional_geometry()
         instrument.write('STAR %s' %self.ui.spin_freq_inicial.value())
         instrument.write('STOP %s' %self.ui.spin_freq_final.value())
         instrument.write('POIN %s' %self.ui.num_pontos.value())
@@ -604,60 +731,68 @@ class StartQT4(QtGui.QMainWindow):
         instrument.write('TRAC B')
         instrument.write('AUTO')
         global Zr, Zi, R, C, er, ei, d, D, Theta, Freq, Z
-        instrument.write('FORM5')
+        configure_ascii_data_transfer(instrument)
         instrument.write('TRAC A')
-        nop = ask(instrument, 'POIN?')
+        nop = ask_for_int(instrument, 'POIN?')
         Z_data = ask_for_values(instrument, 'OUTPDTRC?')
-        Z = [0] * int(nop)
-        for x in range(0, int(nop)):
-            Z[x] = Z_data[2*x]
+        Z = primary_trace_values(Z_data, nop, 'OUTPDTRC? TRAC A')
         instrument.write('TRAC B')
         Theta_data = ask_for_values(instrument, 'OUTPDTRC?')
-        Theta = [0] * int(nop)
-        for x in range(0, int(nop)):
-            Theta[x] = Theta_data[2*x]
+        Theta = primary_trace_values(Theta_data, nop, 'OUTPDTRC? TRAC B')
         Freq = ask_for_values(instrument, 'OUTPSWPRM?')
+        if len(Freq) != nop:
+            raise ValueError(
+                'OUTPSWPRM? returned %s frequency values for %s points.'
+                % (len(Freq), nop)
+            )
         Z = np.asarray(Z)
         Theta = np.asarray(Theta)
         Freq = np.asarray(Freq)
         #stats = instrument.ask_for_values('MEASTAT?')
-        e0 = 8.85418782e-12
-        d = espessura*10**(-3)
-        D = diametro*10**(-3)
-        # er = (2*d*np.cos(np.asarray(Theta)*np.pi/180))/(e0*np.asarray(Z)*np.asarray(Freq)*(D**2)*(np.pi*np.pi)*np.tan(np.asarray(Theta)*np.pi/180))
-        A = (np.pi*(D**2))/4
-        Zr = Z*np.cos(np.asarray(Theta)*np.pi/180)
-        Zi = Z*np.sin(np.asarray(Theta)*np.pi/180)*(-1)
-        R = Z/np.cos(np.asarray(Theta)*np.pi/180)
-        C = Zi/(Zr*np.asarray(Freq)*R*2*np.pi)
-
-        er = (C*d)/(e0*A)
-        ei = er*np.tan((90+np.asarray(Theta))*np.pi/180)
-        # ei = er*np.tan((90+np.asarray(Theta))*np.pi/180
-        self.plot_erei()
+        d = None if espessura is None else espessura*10**(-3)
+        D = None if diametro is None else diametro*10**(-3)
+        Zr, Zi, R, C, er, ei = compute_response(Freq, Z, Theta, diametro, espessura)
+        if has_permittivity_data(er, ei):
+            self.plot_erei()
+        else:
+            self.plot_ZT()
         self.update_table(Freq, Z, Theta, np.ndarray.tolist(er), np.ndarray.tolist(ei))
         path = str(self.ui.LineEdit_SavePath.text())
-        filename = str(id_amostra)
+        filename = safe_filename(id_amostra)
         M = np.c_[np.asarray(Freq), np.asarray(Z), np.asarray(Theta), er, ei]
         np.savetxt(os.path.join(path, '%s.txt' % filename), M, fmt='%1.4e',
                    delimiter='\t',
                    header='#Freq(Hz)\t Z(ohms)\t Phase(degrees) \t er_Re \t er_Im',
                    comments='#Sample %s\n#d(mm)  %s\n#D(mm) %s \n#Sweep  %s \n#Voltage  %s'
-                            % (id_amostra, espessura, diametro, sweepcmd, self.ui.spinbox_tensao.value()))
+                            % (
+                                id_amostra,
+                                metadata_value(espessura),
+                                metadata_value(diametro),
+                                sweepcmd,
+                                self.ui.spinbox_tensao.value(),
+                            ))
         self.ui.btn_plot_ZrZi.setEnabled(True)
         self.ui.btn_plot_ZT.setEnabled(True)
-        self.ui.btn_plot_permi.setEnabled(True)
+        self.ui.btn_plot_permi.setEnabled(has_permittivity_data(er, ei))
         self.ui.btn_plot_RC.setEnabled(True)
 
     def dynamic_analysis(self):
+        try:
+            self._dynamic_analysis()
+        except Exception:
+            self.show_error(
+                'Acquisition error',
+                'The dynamic sweep finished, but the data could not be collected or processed.',
+                traceback.format_exc(),
+            )
+
+    def _dynamic_analysis(self):
         #message = QtGui.QMessageBox()
         #message.setText('Fun\E7\E3o ainda em constru\E7\E3o.')
         #message.setDetailedText('Por favor, utilize o modo padr\E3o de an\E1lise por enquanto.')
         #message.exec_()
         #return
-        try:
-            instrument
-        except NameError:
+        if instrument is None:
             errorbox = QtGui.QMessageBox()
             errorbox.setIcon(QtGui.QMessageBox.Critical)
             errorbox.setText('Instrument not connected or not recognized.')
@@ -676,8 +811,7 @@ class StartQT4(QtGui.QMainWindow):
         else:
             paver = 'OFF'
         id_amostra = self.ui.amostra_id.text()
-        diametro = float(self.ui.tbox_diametro.text())
-        espessura = float(self.ui.tbox_espessura.text())
+        diametro, espessura = self.optional_geometry()
         instrument.write('STAR %s' %self.ui.spin_freq_inicial.value())
         instrument.write('STOP %s' %self.ui.spin_freq_final.value())
         instrument.write('POIN %s' %self.ui.num_pontos.value())
@@ -700,49 +834,49 @@ class StartQT4(QtGui.QMainWindow):
         instrument.write('TRAC B')
         instrument.write('AUTO')
         global Zr, Zi, R, C, er, ei, d, D, Theta, Freq, Z
-        instrument.write('FORM5')
+        configure_ascii_data_transfer(instrument)
         instrument.write('TRAC A')
-        nop = ask(instrument, 'POIN?')
+        nop = ask_for_int(instrument, 'POIN?')
         Z_data = ask_for_values(instrument, 'OUTPDTRC?')
-        Z = [0] * int(nop)
-        for x in range(0, int(nop)):
-            Z[x] = Z_data[2*x]
+        Z = primary_trace_values(Z_data, nop, 'OUTPDTRC? TRAC A')
         instrument.write('TRAC B')
         Theta_data = ask_for_values(instrument, 'OUTPDTRC?')
-        Theta = [0] * int(nop)
-        for x in range(0, int(nop)):
-            Theta[x] = Theta_data[2*x]
+        Theta = primary_trace_values(Theta_data, nop, 'OUTPDTRC? TRAC B')
         Freq = ask_for_values(instrument, 'OUTPSWPRM?')
+        if len(Freq) != nop:
+            raise ValueError(
+                'OUTPSWPRM? returned %s frequency values for %s points.'
+                % (len(Freq), nop)
+            )
         Z = np.asarray(Z)
         Theta = np.asarray(Theta)
         Freq = np.asarray(Freq)
         #stats = instrument.ask_for_values('MEASTAT?')
-        e0 = 8.85418782e-12
-        d = espessura*10**(-3)
-        D = diametro*10**(-3)
-        # er = (2*d*np.cos(np.asarray(Theta)*np.pi/180))/(e0*np.asarray(Z)*np.asarray(Freq)*(D**2)*(np.pi*np.pi)*np.tan(np.asarray(Theta)*np.pi/180))
-        A = (np.pi*(D**2))/4
-        Zr = Z*np.cos(np.asarray(Theta)*np.pi/180)
-        Zi = Z*np.sin(np.asarray(Theta)*np.pi/180)*(-1)
-        R = Z/np.cos(np.asarray(Theta)*np.pi/180)
-        C = Zi/(Zr*np.asarray(Freq)*R*2*np.pi)
-
-        er = (C*d)/(e0*A)
-        ei = er*np.tan((90+np.asarray(Theta))*np.pi/180)
-        # ei = er*np.tan((90+np.asarray(Theta))*np.pi/180
-        self.plot_erei()
+        d = None if espessura is None else espessura*10**(-3)
+        D = None if diametro is None else diametro*10**(-3)
+        Zr, Zi, R, C, er, ei = compute_response(Freq, Z, Theta, diametro, espessura)
+        if has_permittivity_data(er, ei):
+            self.plot_erei()
+        else:
+            self.plot_ZT()
         self.update_table(Freq, Z, Theta, np.ndarray.tolist(er), np.ndarray.tolist(ei))
         path = str(self.ui.LineEdit_SavePath.text())
-        filename = str(id_amostra)
+        filename = safe_filename(id_amostra)
         M = np.c_[np.asarray(Freq), np.asarray(Z), np.asarray(Theta), er, ei]
         np.savetxt(os.path.join(path, '%s.txt' % filename), M, fmt='%1.4e',
                    delimiter='\t',
                    header='#Freq(Hz)\t Z(ohms)\t Phase(degrees) \t er_Re \t er_Im',
                    comments='#sample %s\n#d(mm) = %s\n#D(mm) = %s \n#sweep = %s \n#voltage = %s'
-                            % (id_amostra, espessura, diametro, sweepcmd, self.ui.spinbox_tensao.value()))
+                            % (
+                                id_amostra,
+                                metadata_value(espessura),
+                                metadata_value(diametro),
+                                sweepcmd,
+                                self.ui.spinbox_tensao.value(),
+                            ))
         self.ui.btn_plot_ZrZi.setEnabled(True)
         self.ui.btn_plot_ZT.setEnabled(True)
-        self.ui.btn_plot_permi.setEnabled(True)
+        self.ui.btn_plot_permi.setEnabled(has_permittivity_data(er, ei))
         self.ui.btn_plot_RC.setEnabled(True)
 
         # path = str(self.ui.LineEdit_SavePath.text())
@@ -768,6 +902,21 @@ class StartQT4(QtGui.QMainWindow):
         self.update_table(data, data, data, data, data)
 
     def plot_erei(self):
+        try:
+            er_data = er
+            ei_data = ei
+        except NameError:
+            self.show_error(
+                'Permittivity unavailable',
+                'No measurement data is loaded.',
+            )
+            return
+        if not has_permittivity_data(er_data, ei_data):
+            self.show_error(
+                'Permittivity unavailable',
+                'Permittivity requires both D and t. Leave them blank for generic impedance analysis and use Z/Theta, R/C, or Zr/Zi plots.',
+            )
+            return
         self.plot_data(Freq, 'Frequency (Hz)', er, r"$\epsilon'$", ei, r"$\epsilon''$", 'log')
 
     def plot_RC(self):

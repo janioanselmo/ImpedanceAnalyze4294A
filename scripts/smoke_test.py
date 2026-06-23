@@ -26,6 +26,8 @@ class FakeInstrument:
 
     def query_ascii_values(self, command):
         self.commands.append(command)
+        if command in ('OUTPDTRC?', 'OUTPSWPRM?') and 'FORM4' not in self.commands:
+            raise UnicodeDecodeError('ascii', b'\xae', 0, 1, 'ordinal not in range(128)')
         if command == 'OUTPDTRC?':
             return [1000.0, 0.0, 2000.0, 0.0]
         if command == 'OUTPSWPRM?':
@@ -104,7 +106,22 @@ def main():
 
     output_path = os.path.join(tempfile.gettempdir(), 'audit_fake.txt')
     assert os.path.exists(output_path)
+    assert 'FORM4' in script.instrument.commands
+    assert 'FORM5' not in script.instrument.commands
     assert window.ui.tableView.model().rowCount(None) == 2
+    os.remove(output_path)
+
+    script.instrument = FakeInstrument()
+    window.ui.amostra_id.setText('generic_no_geometry')
+    window.ui.tbox_diametro.setText('')
+    window.ui.tbox_espessura.setText('')
+    window.run_analysis()
+
+    output_path = os.path.join(tempfile.gettempdir(), 'generic_no_geometry.txt')
+    assert os.path.exists(output_path)
+    assert 'FORM4' in script.instrument.commands
+    assert not window.ui.btn_plot_permi.isEnabled()
+    assert window.ax1.get_ylabel() == 'Impedance (Ohms)'
     os.remove(output_path)
 
     print('smoke test ok')
