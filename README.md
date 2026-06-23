@@ -103,6 +103,20 @@ No Windows, também é possível criar o ambiente virtual, instalar dependência
 run_windows.bat
 ```
 
+Para uma máquina sem internet, baixe as dependências em uma máquina conectada:
+
+```bat
+python -m pip download -r requirements.txt -d offline\wheels
+```
+
+Copie o repositório inteiro, incluindo a pasta `offline\wheels`, para a máquina do equipamento e execute:
+
+```bat
+install_offline_windows.bat
+```
+
+As wheels precisam ser compatíveis com a versão e arquitetura do Python instalado na máquina offline. Use Python 64-bit e, se possível, a mesma versão usada para criar a pasta `offline\wheels`. O guia resumido fica em `offline/README_OFFLINE.md`.
+
 No Linux/macOS:
 
 ```bash
@@ -111,12 +125,57 @@ No Linux/macOS:
 
 Para testar sem instrumento físico, habilite o modo de simulação na interface quando o ambiente `pyvisa-sim` estiver configurado.
 
+### Diagnóstico de conexão VISA
+
+Antes de usar a interface com o equipamento real, teste se o Windows está expondo o instrumento para o PyVISA:
+
+```bash
+python scripts/visa_diagnostic.py
+```
+
+Se aparecer `Could not locate a VISA implementation`, falta instalar um backend VISA do sistema, como Keysight IO Libraries Suite ou NI-VISA. Depois de instalar o driver e conectar o adaptador/instrumento, rode o comando de novo. O recurso esperado para GPIB normalmente terá o formato:
+
+```text
+GPIB0::17::INSTR
+```
+
+Para testar um endereço específico:
+
+```bash
+python scripts/visa_diagnostic.py GPIB0::17::INSTR
+```
+
+O teste só está correto quando a resposta de `*IDN?` identifica o analisador Keysight/Agilent 4294A.
+
+#### Conexão Ethernet em `10.1.1.2`
+
+Se o equipamento ou ponte Ethernet/GPIB usa IP fixo `10.1.1.2`, o computador também precisa estar na mesma rede. Configure a placa Ethernet do Windows com um IP livre, por exemplo:
+
+```text
+IP:      10.1.1.1
+Máscara: 255.255.255.0
+Gateway: em branco
+DNS:     em branco
+```
+
+Depois teste os formatos TCPIP mais comuns:
+
+```bash
+python scripts/visa_diagnostic.py --py TCPIP0::10.1.1.2::inst0::INSTR
+python scripts/visa_diagnostic.py --py TCPIP0::10.1.1.2::5025::SOCKET
+python scripts/visa_diagnostic.py --py TCPIP0::10.1.1.2::gpib0,17::INSTR
+```
+
+Se o endereço GPIB do instrumento não for `17`, troque o número no último comando. Na interface, esses endereços aparecem como sugestões e também podem ser digitados manualmente no campo de equipamento.
+
+No momento, `10.1.1.2` é o IP padrão sugerido pela aplicação para a conexão Ethernet. O campo de equipamento é editável, então outro endereço VISA pode ser digitado manualmente quando necessário. Uma melhoria planejada é adicionar um campo dedicado para informar apenas o IP e gerar automaticamente os endereços TCPIP correspondentes.
+
 ### Auditoria rápida
 
 Depois de alterações no código, rode:
 
 ```bash
-python -m py_compile script.py interface.py scripts/smoke_test.py
+python -m py_compile script.py interface.py scripts/smoke_test.py scripts/visa_diagnostic.py
 python scripts/smoke_test.py
 ```
 

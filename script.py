@@ -38,6 +38,12 @@ from interface import Ui_MainWindow
 
 __author__ = 'giovanirech'
 
+DEFAULT_TCPIP_RESOURCES = [
+    'TCPIP0::10.1.1.2::inst0::INSTR',
+    'TCPIP0::10.1.1.2::5025::SOCKET',
+    'TCPIP0::10.1.1.2::gpib0,17::INSTR',
+]
+
 try:
     unicode
 except NameError:
@@ -69,6 +75,18 @@ def wait_for_operation_complete(resource):
         ask(resource, '*OPC?')
     finally:
         resource.timeout = old_timeout
+
+
+def is_tcpip_resource(address):
+    return str(address).strip().upper().startswith('TCPIP')
+
+
+def resource_manager(simulation=False, py_backend=False):
+    if simulation:
+        return visa.ResourceManager('@sim')
+    if py_backend:
+        return visa.ResourceManager('@py')
+    return visa.ResourceManager()
 
 
 def clear_figure(figure):
@@ -108,6 +126,7 @@ class StartQT4(QtGui.QMainWindow):
         self.ui.blt_skipcal.clicked.connect(self.skip_calibration)
         self.is_open_calibrated = False
         self.is_short_calibrated = False
+        self.populate_default_tcpip_resources()
         layout = self.ui.verticalLayout
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
@@ -246,11 +265,22 @@ class StartQT4(QtGui.QMainWindow):
         ui.tableView.horizontalHeader().setStretchLastSection(True)
         ui.tableView.horizontalHeader().setDefaultAlignment(QtCore.Qt.AlignCenter)
         ui.tableView.verticalHeader().setDefaultSectionSize(22)
+        ui.combobox_equipamentos.setEditable(True)
+        ui.combobox_equipamentos.setMinimumWidth(270)
         ui.tabWidget.setTabText(ui.tabWidget.indexOf(ui.tab), 'Connection')
         ui.tabWidget.setTabText(ui.tabWidget.indexOf(ui.tab_2), 'Analysis')
         ui.tabWidget.setTabText(ui.tabWidget.indexOf(ui.tab_3), 'Program')
 
     # Metodos
+    def populate_default_tcpip_resources(self):
+        existing = [
+            self.ui.combobox_equipamentos.itemText(index)
+            for index in range(self.ui.combobox_equipamentos.count())
+        ]
+        for address in DEFAULT_TCPIP_RESOURCES:
+            if address not in existing:
+                self.ui.combobox_equipamentos.addItem(address)
+
     def skip_calibration(self):
         warning = QtGui.QMessageBox()
         warning.setText('Are you sure you want to skip calibration? Without geometry compensation, the collected data'
@@ -361,34 +391,71 @@ class StartQT4(QtGui.QMainWindow):
         global rm
         try:
             is_simulation = self.ui.checkbox_pyvisasim.checkState()
-            if is_simulation:
-                rm = visa.ResourceManager('@sim')
-            else:
-                rm = visa.ResourceManager()
+            rm = resource_manager(simulation=is_simulation)
             equipaments = list(rm.list_resources())
             self.ui.combobox_equipamentos.clear()
             self.ui.combobox_equipamentos.addItems(equipaments)
+            if not is_simulation:
+                self.populate_default_tcpip_resources()
         except Exception:
+            self.ui.combobox_equipamentos.clear()
+            self.populate_default_tcpip_resources()
             self.show_error(
                 'VISA detection error',
-                'Could not detect VISA instruments.',
-                traceback.format_exc(),
+                'Could not detect VISA instruments. Ethernet addresses were added manually.',
+                traceback.format_exc()
+                + '\n\nFor Ethernet, try TCPIP0::10.1.1.2::inst0::INSTR first. '
+                + 'If the system VISA backend is not available, install pyvisa-py or verify '
+                + 'the Keysight/NI VISA driver installation.',
             )
 
     def instrument_connection(self):
-        global instrument
-        address = self.ui.combobox_equipamentos.currentText()
-        try:
-            instrument = rm.open_resource(unicode(address))
-        except Exception:
+        global instrument, rm
+        address = str(self.ui.combobox_equipamentos.currentText()).strip()
+        if not address:
             self.show_error(
                 'Connection error',
-                'Could not connect to the selected instrument.',
-                'Please verify that the equipment is turned on, connected, and that the required VISA driver is installed.\n\n'
-                + traceback.format_exc(),
+                'No VISA address selected.',
             )
             return
         try:
+            try:
+                rm
+            except NameError:
+                rm = resource_manager(
+                    simulation=self.ui.checkbox_pyvisasim.checkState()
+                )
+            instrument = rm.open_resource(unicode(address))
+        except Exception:
+            first_error = traceback.format_exc()
+            if is_tcpip_resource(address) and not self.ui.checkbox_pyvisasim.checkState():
+                try:
+                    rm = resource_manager(py_backend=True)
+                    instrument = rm.open_resource(unicode(address))
+                except Exception:
+                    self.show_error(
+                        'Connection error',
+                        'Could not connect to the selected TCPIP instrument.',
+                        'Tried the system VISA backend and pyvisa-py.\n\n'
+                        'System VISA error:\n'
+                        + first_error
+                        + '\n\npyvisa-py error:\n'
+                        + traceback.format_exc(),
+                    )
+                    return
+            else:
+                self.show_error(
+                    'Connection error',
+                    'Could not connect to the selected instrument.',
+                    'Please verify that the equipment is turned on, connected, and that the required VISA driver is installed.\n\n'
+                    + first_error,
+                )
+                return
+        try:
+            if is_tcpip_resource(address) and address.upper().endswith('::SOCKET'):
+                instrument.write_termination = '\n'
+                instrument.read_termination = '\n'
+            instrument.timeout = 10000
             instrument_name = ask(instrument, '*IDN?')
             self.ui.label_inst_name.setText(instrument_name)
             self.ui.group_calibration.setEnabled(True)
